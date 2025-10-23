@@ -1,0 +1,13 @@
+[project]
+name = "cgt-ai-core"
+version = "0.1.0"
+description = "Configuration data, classes, and utility functions used by all CGT AI services"
+requires-python = ">=3.13"
+dependencies = [
+    "pika>=1.3.2",
+    "pika-stubs>=0.1.3",
+]
+
+[build-system]
+requires = ["uv_build"]
+build-backend = "uv_build"
