@@ -46,9 +46,6 @@ class Service:
         self.consumers = []
         self.producers = []
 
-        self.consumer_coroutines = []
-        self.producer_coroutines = []
-
     def add_consumer(self, consumer : RmqConsumer):
         self.consumers.append(consumer)
 
@@ -57,6 +54,23 @@ class Service:
 
     async def run(self):
         LOGGER.info('Running...')
-        self.consumer_coroutines = [consumer.run() for consumer in self.consumers]
-        self.producer_coroutines = [producer.run() for producer in self.producers]
-        await asyncio.gather(*self.consumer_coroutines, *self.producer_coroutines)
+        run_coroutines = [consumer.run() for consumer in self.consumers] + [producer.run() for producer in self.producers]
+        try:
+            await asyncio.gather(*run_coroutines)
+        except asyncio.CancelledError as exc:
+            LOGGER.exception('Run cancelled', exc_info=exc)
+        except Exception as exc:
+            LOGGER.exception('Unhandled exception', exc_info=exc)
+        finally:
+            await self.stop()
+
+    async def stop(self):
+        LOGGER.info('Stopping...')
+        stop_coroutines = [consumer.stop() for consumer in self.consumers] + [producer.stop() for producer in self.producers]
+        try:
+            await asyncio.gather(*stop_coroutines)
+        except asyncio.CancelledError as exc:
+            LOGGER.exception('Stop cancelled', exc_info=exc)
+        except Exception as exc:
+            LOGGER.exception('Unhandled exception', exc_info=exc)
+        LOGGER.info('Stop completed.')

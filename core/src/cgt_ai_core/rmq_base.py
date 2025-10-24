@@ -149,17 +149,19 @@ class RmqBase:
         self._run_should_stop_event.clear()
         self._stop_completed_event.clear()
 
+        self.pre_open_connection()
+        self.open_connection()
+
         try:
-            self.pre_open_connection()
-            self.open_connection()
+            # Run until a stop event is received or the run loop excepts
             await self._run_should_stop_event.wait()
-        except Exception as ex:
-            LOGGER.exception('Unhandled exception', exc_info=ex)
-            # Initiate a graceful shutdown attempt if run loop excepts
+        except asyncio.CancelledError as exc:
+            LOGGER.exception('Run cancelled', exc_info=exc)
+        except Exception as exc:
+            LOGGER.exception('Unhandled exception', exc_info=exc)
+        finally:
             if not self._closing:
                 await self.stop()
-        finally:
-            LOGGER.info('Run completed.')
 
     async def stop(self):
         if self._closing and self._stop_completed_event.is_set():
@@ -169,7 +171,14 @@ class RmqBase:
         # Stop previously initiated, but not yet complete
         if self._closing:
             LOGGER.info('Stop already in progress. Waiting for completion...')
-            await self._stop_completed_event.wait()
+
+            try:
+                await self._stop_completed_event.wait()
+            except asyncio.CancelledError as exc:
+                LOGGER.exception('Stop cancelled', exc_info=exc)
+            except Exception as exc:
+                LOGGER.exception('Unhandled exception', exc_info=exc)
+
             LOGGER.info('Stop completed.')
             return
 
@@ -186,7 +195,14 @@ class RmqBase:
         self.close_connection()
 
         LOGGER.info('Waiting for stop to complete...')
-        await self._stop_completed_event.wait()
+
+        try:
+            await self._stop_completed_event.wait()
+        except asyncio.CancelledError as exc:
+            LOGGER.exception('Stop cancelled', exc_info=exc)
+        except Exception as exc:
+            LOGGER.exception('Unhandled exception', exc_info=exc)
+
         LOGGER.info('Stop completed.')
 
     def pre_open_connection(self):
