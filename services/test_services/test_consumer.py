@@ -1,8 +1,6 @@
 import asyncio
 import logging
 
-from typing import Any
-
 from pika import ConnectionParameters
 from pika.exchange_type import ExchangeType
 
@@ -11,6 +9,7 @@ from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.service import Service
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
 
+from messages import Foo,Bar
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,12 +23,17 @@ class TestConsumer(Service):
                  password: str = None):
         super().__init__(connection_params, host, port, username, password)
 
-        self.add_consumer(RmqConsumer(on_message_callback=self.on_message, connection_params=self.connection_params, exchange_name='foo', exchange_type=ExchangeType.direct))
-        self.add_consumer(RmqConsumer(on_message_callback=self.on_message, connection_params=self.connection_params, exchange_name='bar', exchange_type=ExchangeType.direct))
+        self.add_consumer(RmqConsumer(on_message_callback=self.on_foo_message, connection_params=self.connection_params, exchange_name='foo', exchange_type=ExchangeType.direct))
+        self.add_consumer(RmqConsumer(on_message_callback=self.on_bar_message, connection_params=self.connection_params, exchange_name='bar', exchange_type=ExchangeType.direct))
 
     @staticmethod
-    def on_message(exchange_name: str, queue_name: str, routing_key: str, body: Any):
-        LOGGER.info('Received message on queue %s through routing key %s from exchange %s: %s',
+    def on_foo_message(exchange_name: str, queue_name: str, routing_key: str, body: Foo):
+        LOGGER.info('Received foo message on queue %s through routing key %s from exchange %s: %s',
+                    queue_name, routing_key, exchange_name, body)
+
+    @staticmethod
+    def on_bar_message(exchange_name: str, queue_name: str, routing_key: str, body: Bar):
+        LOGGER.info('Received bar message on queue %s through routing key %s from exchange %s: %s',
                     queue_name, routing_key, exchange_name, body)
 
 

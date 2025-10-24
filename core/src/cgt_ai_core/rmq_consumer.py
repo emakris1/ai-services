@@ -1,8 +1,7 @@
-import json
 import logging
+import msgspec
 
-from typing import Any
-from typing import Callable
+from typing import Callable, Generic, TypeVar
 
 from pika import ConnectionParameters
 from pika.channel import Channel
@@ -15,10 +14,12 @@ from cgt_ai_core.rmq_base import RmqBase
 
 LOGGER = logging.getLogger(__name__)
 
+T = TypeVar("T", bound=msgspec.Struct)
 
-class RmqConsumer(RmqBase):
+
+class RmqConsumer(RmqBase, Generic[T]):
     def __init__(self,
-                 on_message_callback: Callable[[str, str, str, Any], None],
+                 on_message_callback: Callable[[str, str, str, T], None],
                  connection_params: ConnectionParameters,
                  exchange_name: str,
                  exchange_type: ExchangeType,
@@ -32,6 +33,8 @@ class RmqConsumer(RmqBase):
 
         self._prefetch_count = 0
         self._prefetch_size = 0
+
+        self.decoder = msgspec.json.Decoder()
 
     def post_queue_bind(self):
         self.set_qos()
@@ -64,10 +67,10 @@ class RmqConsumer(RmqBase):
                    basic_deliver: Basic.Deliver,
                    basic_properties: BasicProperties,
                    body: bytes):
-        json_body = json.loads(body)
+        message = self.decoder.decode(body)
         LOGGER.info('Received message # %s from %s: %s',
-                    basic_deliver.delivery_tag, basic_properties.app_id, json_body)
-        self.on_message_callback(self.exchange_name, self.queue_name, self.routing_key, json_body)
+                    basic_deliver.delivery_tag, basic_properties.app_id, message)
+        self.on_message_callback(self.exchange_name, self.queue_name, self.routing_key, message)
         self.acknowledge_message(basic_deliver.delivery_tag)
 
     def acknowledge_message(self, delivery_tag: int):

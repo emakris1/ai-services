@@ -1,8 +1,7 @@
-import json
 import logging
+import msgspec
 
-from typing import Any
-from typing import Callable
+from typing import Callable, Generic, TypeVar
 
 from pika import ConnectionParameters
 from pika.exchange_type import ExchangeType
@@ -13,10 +12,12 @@ from cgt_ai_core.rmq_base import RmqBase
 
 LOGGER = logging.getLogger(__name__)
 
+T = TypeVar("T", bound=msgspec.Struct)
 
-class RmqProducer(RmqBase):
+
+class RmqProducer(RmqBase, Generic[T]):
     def __init__(self,
-                 on_producer_ready_callback: Callable[['RmqProducer'], None],
+                 on_producer_ready_callback: Callable[['RmqProducer[T]'], None],
                  connection_params: ConnectionParameters,
                  exchange_name: str,
                  exchange_type: ExchangeType,
@@ -30,6 +31,8 @@ class RmqProducer(RmqBase):
         self._acked = None
         self._nacked = None
         self._message_number = None
+
+        self.encoder = msgspec.json.Encoder()
 
     def post_queue_bind(self):
         self.enable_delivery_confirmations()
@@ -67,7 +70,7 @@ class RmqProducer(RmqBase):
         LOGGER.info('Published %i messages; %i awaiting confirmation, %i were acked, and %i were nacked',
                     self._message_number, len(self._deliveries), self._acked, self._nacked)
 
-    def publish_message(self, message: Any):
+    def publish_message(self, message: T):
         if self._channel is None:
             LOGGER.warning('Channel has not yet been created! Skipping publish of message.')
             return
@@ -79,8 +82,8 @@ class RmqProducer(RmqBase):
         self._channel.basic_publish(
             exchange=self.exchange_name,
             routing_key=self.routing_key,
-            body=json.dumps(message, ensure_ascii=False),
-            properties=BasicProperties(app_id='rmq-producer', content_type='application/json')
+            body=self.encoder.encode(message),
+            properties=BasicProperties(app_id=self.__class__.__name__, content_type='application/json')
         )
         self._message_number += 1
         self._deliveries[self._message_number] = True

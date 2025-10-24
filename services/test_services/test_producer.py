@@ -1,5 +1,8 @@
 import asyncio
 import logging
+import uuid
+
+from datetime import datetime
 
 from pika import ConnectionParameters
 from pika.exchange_type import ExchangeType
@@ -8,6 +11,8 @@ from cgt_ai_core.log_config import LOG_FORMAT
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.service import Service
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
+
+from messages import Foo,Bar
 
 
 LOGGER = logging.getLogger(__name__)
@@ -34,13 +39,13 @@ class TestProducer(Service):
     @staticmethod
     async def publish_foo_message(producer: RmqProducer):
         while True:
-            producer.publish_message(message='foo')
+            producer.publish_message(message=Foo(id=uuid.uuid4(), datetime=datetime.now()))
             await asyncio.sleep(1)
 
     @staticmethod
     async def publish_bar_message(producer: RmqProducer):
         while True:
-            producer.publish_message(message='bar')
+            producer.publish_message(message=Bar(id=uuid.uuid4(), datetime=datetime.now()))
             await asyncio.sleep(1)
 
 
