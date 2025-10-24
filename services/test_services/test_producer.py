@@ -25,13 +25,23 @@ class TestProducer(Service):
         self.add_producer(RmqProducer(on_producer_ready_callback=self.on_foo_producer_ready, connection_params=self.connection_params, exchange_name='foo', exchange_type=ExchangeType.direct))
         self.add_producer(RmqProducer(on_producer_ready_callback=self.on_bar_producer_ready, connection_params=self.connection_params, exchange_name='bar', exchange_type=ExchangeType.direct))
 
-    @staticmethod
-    def on_foo_producer_ready(producer: RmqProducer):
-        producer.publish_message(message='foo')
+    def on_foo_producer_ready(self, producer: RmqProducer):
+        asyncio.create_task(self.publish_foo_message(producer))
+
+    def on_bar_producer_ready(self, producer: RmqProducer):
+        asyncio.create_task(self.publish_bar_message(producer))
 
     @staticmethod
-    def on_bar_producer_ready(producer: RmqProducer):
-        producer.publish_message(message='bar')
+    async def publish_foo_message(producer: RmqProducer):
+        while True:
+            producer.publish_message(message='foo')
+            await asyncio.sleep(1)
+
+    @staticmethod
+    async def publish_bar_message(producer: RmqProducer):
+        while True:
+            producer.publish_message(message='bar')
+            await asyncio.sleep(1)
 
 
 async def main():
