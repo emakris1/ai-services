@@ -45,7 +45,9 @@ class Service:
 
         self.consumers = []
         self.producers = []
-        self.tasks = []
+
+        self.consumer_coroutines = []
+        self.producer_coroutines = []
 
     def add_consumer(self, consumer : RmqConsumer):
         self.consumers.append(consumer)
@@ -54,9 +56,7 @@ class Service:
         self.producers.append(producer)
 
     async def run(self):
-        for consumer in self.consumers:
-            self.tasks.append(asyncio.create_task(consumer.run()))
-        for producer in self.producers:
-            self.tasks.append(asyncio.create_task(producer.run()))
-
-        await asyncio.gather(*self.tasks)
+        LOGGER.info('Running...')
+        self.consumer_coroutines = [consumer.run() for consumer in self.consumers]
+        self.producer_coroutines = [producer.run() for producer in self.producers]
+        await asyncio.gather(*self.consumer_coroutines, *self.producer_coroutines)
