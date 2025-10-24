@@ -8,4 +8,4 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-cgt-ai-core = { path = "../../core", editable = true }
+cgt-ai-core = { path = "../../core" }
