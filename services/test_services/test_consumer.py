@@ -8,6 +8,7 @@ from cgt_ai_core.log_config import LOG_FORMAT
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.service import Service
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
+from cgt_ai_core.service_runner import run_service
 
 from messages import Foo,Bar
 
@@ -48,18 +49,9 @@ class TestConsumer(Service):
 async def main():
     parser = get_service_arg_parser(description='Test Consumer')
     args = parser.parse_args()
-
     logging.basicConfig(level=getattr(logging, args.log_level), format=LOG_FORMAT)
-
     service = TestConsumer(host=args.rmq_host, port=args.rmq_port, username=args.rmq_username, password=args.rmq_password)
-    try:
-        await service.run()
-    except asyncio.CancelledError as exc:
-        LOGGER.exception('Run cancelled', exc_info=exc)
-    except Exception as exc:
-        LOGGER.exception('Unhandled exception', exc_info=exc)
-    finally:
-        await service.stop()
+    await run_service(service)
 
 if __name__ == '__main__':
     asyncio.run(main())
