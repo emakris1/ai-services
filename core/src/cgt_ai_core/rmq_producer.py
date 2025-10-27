@@ -17,12 +17,12 @@ T = TypeVar("T", bound=msgspec.Struct)
 
 class RmqProducer(RmqBase, Generic[T]):
     def __init__(self,
-                 on_producer_ready_callback: Callable[['RmqProducer[T]'], None],
                  connection_params: ConnectionParameters,
                  exchange_name: str,
                  exchange_type: ExchangeType,
                  queue_name: str = '',
-                 routing_key: str = None):
+                 routing_key: str = None,
+                 on_producer_ready_callback: Callable[['RmqProducer[T]'], None] = lambda _producer: None):
         super().__init__(connection_params, exchange_name, exchange_type, queue_name, routing_key)
 
         self.on_producer_ready_callback = on_producer_ready_callback
@@ -36,11 +36,13 @@ class RmqProducer(RmqBase, Generic[T]):
 
     def post_queue_bind(self):
         self.enable_delivery_confirmations()
-        self.on_producer_ready_callback(self)
 
     def enable_delivery_confirmations(self):
         LOGGER.info('Enabling delivery confirmations...')
         self._channel.confirm_delivery(self.on_delivery_confirmation)
+
+        LOGGER.info('Producer is ready to publish messages!')
+        self.on_producer_ready_callback(self)
 
     def on_delivery_confirmation(self, method_frame: Method):
         confirmation_type = method_frame.method.NAME.split('.')[1].lower()

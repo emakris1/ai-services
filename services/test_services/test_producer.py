@@ -27,25 +27,27 @@ class TestProducer(Service):
                  password: str = None):
         super().__init__(connection_params, host, port, username, password)
 
-        self.add_producer(RmqProducer(on_producer_ready_callback=self.on_foo_producer_ready, connection_params=self.connection_params, exchange_name='foo', exchange_type=ExchangeType.direct))
-        self.add_producer(RmqProducer(on_producer_ready_callback=self.on_bar_producer_ready, connection_params=self.connection_params, exchange_name='bar', exchange_type=ExchangeType.direct))
+        self.foo_producer = None
+        self.bar_producer = None
+        self.add_producer(RmqProducer(connection_params=self.connection_params, exchange_name='foo', exchange_type=ExchangeType.direct, on_producer_ready_callback=self.on_foo_producer_ready))
+        self.add_producer(RmqProducer(connection_params=self.connection_params, exchange_name='bar', exchange_type=ExchangeType.direct, on_producer_ready_callback=self.on_bar_producer_ready))
 
     def on_foo_producer_ready(self, producer: RmqProducer):
-        asyncio.create_task(self.publish_foo_message(producer))
+        self.foo_producer = producer
+        asyncio.create_task(self.publish_foo_message())
 
     def on_bar_producer_ready(self, producer: RmqProducer):
-        asyncio.create_task(self.publish_bar_message(producer))
+        self.bar_producer = producer
+        asyncio.create_task(self.publish_bar_message())
 
-    @staticmethod
-    async def publish_foo_message(producer: RmqProducer):
+    async def publish_foo_message(self):
         while True:
-            producer.publish_message(message=Foo(id=uuid.uuid4(), datetime=datetime.now()))
+            self.foo_producer.publish_message(message=Foo(id=uuid.uuid4(), datetime=datetime.now()))
             await asyncio.sleep(1)
 
-    @staticmethod
-    async def publish_bar_message(producer: RmqProducer):
+    async def publish_bar_message(self):
         while True:
-            producer.publish_message(message=Bar(id=uuid.uuid4(), datetime=datetime.now()))
+            self.bar_producer.publish_message(message=Bar(id=uuid.uuid4(), datetime=datetime.now()))
             await asyncio.sleep(1)
 
 

@@ -19,14 +19,16 @@ T = TypeVar("T", bound=msgspec.Struct)
 
 class RmqConsumer(RmqBase, Generic[T]):
     def __init__(self,
-                 on_message_callback: Callable[[str, str, str, T], None],
                  connection_params: ConnectionParameters,
                  exchange_name: str,
                  exchange_type: ExchangeType,
                  queue_name: str = '',
-                 routing_key: str = None):
+                 routing_key: str = None,
+                 on_consumer_ready_callback: Callable[['RmqConsumer[T]'], None] = lambda _consumer: None,
+                 on_message_callback: Callable[[str, str, str, T], None] = lambda _exchange_name, _queue_name, _routing_key, _message: None):
         super().__init__(connection_params, exchange_name, exchange_type, queue_name, routing_key)
 
+        self.on_consumer_ready_callback = on_consumer_ready_callback
         self.on_message_callback = on_message_callback
 
         self._consumer_tag = None
@@ -57,6 +59,9 @@ class RmqConsumer(RmqBase, Generic[T]):
         LOGGER.info('Starting message consumption...')
         self._channel.add_on_cancel_callback(self.on_consumer_cancelled)
         self._consumer_tag = self._channel.basic_consume(queue=self.queue_name, on_message_callback=self.on_message)
+
+        LOGGER.info('Consumer is ready to consume messages!')
+        self.on_consumer_ready_callback(self)
 
     def on_consumer_cancelled(self, method_frame: Method):
         LOGGER.error('Consumer %s was cancelled remotely, shutting down...', method_frame.method.consumer_tag)
