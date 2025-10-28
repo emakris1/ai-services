@@ -43,18 +43,26 @@ class Service:
                 if password:
                     self.connection_params.credentials.password = password
 
+        self.is_running = False
         self.consumers = []
         self.producers = []
 
     def add_consumer(self, consumer : RmqConsumer):
-        self.consumers.append(consumer)
+        if self.is_running:
+            LOGGER.warning('Cannot add consumer while service is running. Please stop service first and then add consumer.')
+        else:
+            self.consumers.append(consumer)
 
     def add_producer(self, producer : RmqProducer):
-        self.producers.append(producer)
+        if self.is_running:
+            LOGGER.warning('Cannot add producer while service is running. Please stop service first and then add producer.')
+        else:
+            self.producers.append(producer)
 
     async def run(self):
         LOGGER.info('Running...')
         run_coroutines = [consumer.run() for consumer in self.consumers] + [producer.run() for producer in self.producers]
+        self.is_running = True
         try:
             await asyncio.gather(*run_coroutines)
         except asyncio.CancelledError as exc:
@@ -73,4 +81,5 @@ class Service:
             LOGGER.exception('Stop cancelled', exc_info=exc)
         except Exception as exc:
             LOGGER.exception('Unhandled exception', exc_info=exc)
+        self.is_running = False
         LOGGER.info('Stop completed.')
