@@ -11,6 +11,7 @@ from cgt_ai_core.service_runner import run_service
 
 from messages import Foo,Bar
 
+
 LOGGER = logging.getLogger(__name__)
 
 

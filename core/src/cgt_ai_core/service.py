@@ -8,6 +8,7 @@ from cgt_ai_core.rmq_default_config import DefaultConnectionParameters
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
 
+
 LOGGER = logging.getLogger(__name__)
 
 

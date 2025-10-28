@@ -10,6 +10,7 @@ from pika.spec import BasicProperties
 
 from cgt_ai_core.rmq_base import RmqBase
 
+
 LOGGER = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=msgspec.Struct)

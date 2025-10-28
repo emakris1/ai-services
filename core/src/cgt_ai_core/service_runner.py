@@ -3,6 +3,7 @@ import logging
 
 from cgt_ai_core.service import Service
 
+
 LOGGER = logging.getLogger(__name__)
 
 
