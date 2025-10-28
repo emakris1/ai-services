@@ -1,7 +1,6 @@
 import asyncio
 import logging
 
-from pika import ConnectionParameters
 from pika.exchange_type import ExchangeType
 
 from cgt_ai_core.log_config import LOG_FORMAT
@@ -17,12 +16,11 @@ LOGGER = logging.getLogger(__name__)
 
 class TestConsumer(Service):
     def __init__(self,
-                 connection_params: ConnectionParameters = None,
                  host: str = None,
                  port: int = None,
                  username: str = None,
                  password: str = None):
-        super().__init__(connection_params, host, port, username, password)
+        super().__init__(host, port, username, password)
 
         self.foo_consumer = None
         self.bar_consumer = None
@@ -49,6 +47,7 @@ class TestConsumer(Service):
 async def main():
     parser = get_service_arg_parser(description='Test Consumer')
     args = parser.parse_args()
+
     logging.basicConfig(level=getattr(logging, args.log_level), format=LOG_FORMAT)
     service = TestConsumer(host=args.rmq_host, port=args.rmq_port, username=args.rmq_username, password=args.rmq_password)
     await run_service(service)
