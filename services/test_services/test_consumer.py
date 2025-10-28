@@ -9,7 +9,7 @@ from cgt_ai_core.service import Service
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
 from cgt_ai_core.service_runner import run_service
 
-from messages import Foo,Bar
+from messages import FooMessage, BarMessage
 
 
 LOGGER = logging.getLogger(__name__)
@@ -35,12 +35,12 @@ class TestConsumer(Service):
         self.bar_consumer = consumer
 
     @staticmethod
-    def on_foo_message(exchange_name: str, queue_name: str, routing_key: str, message: Foo):
+    def on_foo_message(exchange_name: str, queue_name: str, routing_key: str, message: FooMessage):
         LOGGER.info('Received foo message on queue %s through routing key %s from exchange %s: %s',
                     queue_name, routing_key, exchange_name, message)
 
     @staticmethod
-    def on_bar_message(exchange_name: str, queue_name: str, routing_key: str, message: Bar):
+    def on_bar_message(exchange_name: str, queue_name: str, routing_key: str, message: BarMessage):
         LOGGER.info('Received bar message on queue %s through routing key %s from exchange %s: %s',
                     queue_name, routing_key, exchange_name, message)
 
