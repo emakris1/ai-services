@@ -41,12 +41,18 @@ class TestProducer(Service):
 
     async def publish_foo_message(self):
         while True:
-            self.foo_producer.publish_message(message=Foo(id=uuid.uuid4(), datetime=datetime.now()))
+            message = Foo(id=uuid.uuid4(), datetime=datetime.now())
+            LOGGER.info('Sending foo message on queue %s through routing key %s from exchange %s: %s',
+                        self.foo_producer.queue_name, self.foo_producer.routing_key, self.foo_producer.exchange_name, message)
+            self.foo_producer.publish_message(message)
             await asyncio.sleep(1)
 
     async def publish_bar_message(self):
         while True:
-            self.bar_producer.publish_message(message=Bar(id=uuid.uuid4(), datetime=datetime.now()))
+            message = Bar(id=uuid.uuid4(), datetime=datetime.now())
+            LOGGER.info('Sending bar message on queue %s through routing key %s from exchange %s: %s',
+                        self.bar_producer.queue_name, self.bar_producer.routing_key, self.bar_producer.exchange_name, message)
+            self.bar_producer.publish_message(message)
             await asyncio.sleep(1)
 
 

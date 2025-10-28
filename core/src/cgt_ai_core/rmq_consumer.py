@@ -43,8 +43,8 @@ class RmqConsumer(RmqBase, Generic[T]):
         self.set_qos()
 
     def set_qos(self):
-        LOGGER.info('Configuring QoS with prefetch size of %d and prefetch count of %d...',
-                    self._prefetch_size, self._prefetch_count)
+        LOGGER.debug('Configuring QoS with prefetch size of %d and prefetch count of %d...',
+                     self._prefetch_size, self._prefetch_count)
         self._channel.basic_qos(
             prefetch_size=self._prefetch_size,
             prefetch_count=self._prefetch_count,
@@ -52,12 +52,12 @@ class RmqConsumer(RmqBase, Generic[T]):
         )
 
     def on_basic_qos_ok(self, _unused_method_frame: Method):
-        LOGGER.info('QOS configured with prefetch size of %d and prefetch count of %d!',
+        LOGGER.debug('QOS configured with prefetch size of %d and prefetch count of %d!',
                     self._prefetch_size, self._prefetch_count)
         self.start_consuming()
 
     def start_consuming(self):
-        LOGGER.info('Starting message consumption...')
+        LOGGER.debug('Starting message consumption...')
         self._channel.add_on_cancel_callback(self.on_consumer_cancelled)
         self._consumer_tag = self._channel.basic_consume(queue=self.queue_name, on_message_callback=self.on_message)
 
@@ -74,21 +74,21 @@ class RmqConsumer(RmqBase, Generic[T]):
                    basic_properties: BasicProperties,
                    body: bytes):
         message = self.decoder.decode(body)
-        LOGGER.info('Received message # %s from %s: %s',
-                    basic_deliver.delivery_tag, basic_properties.app_id, message)
+        LOGGER.debug('Received message # %s from %s: %s',
+                     basic_deliver.delivery_tag, basic_properties.app_id, message)
         self.on_message_callback(self.exchange_name, self.queue_name, self.routing_key, message)
         self.acknowledge_message(basic_deliver.delivery_tag)
 
     def acknowledge_message(self, delivery_tag: int):
-        LOGGER.info('Acknowledging message %s...', delivery_tag)
+        LOGGER.debug('Acknowledging message %s...', delivery_tag)
         self._channel.basic_ack(delivery_tag)
 
     def stop_consuming(self):
-        LOGGER.info('Stopping message consumption for consumer %s...', self._consumer_tag)
+        LOGGER.debug('Stopping message consumption for consumer %s...', self._consumer_tag)
         self._channel.basic_cancel(self._consumer_tag, self.on_cancel_ok)
 
     def on_cancel_ok(self, method_frame: Method):
-        LOGGER.info('Consumer %s was cancelled successfully. Message consumption stopped.', method_frame.method.consumer_tag)
+        LOGGER.debug('Consumer %s was cancelled successfully. Message consumption stopped.', method_frame.method.consumer_tag)
         self.close_channel()
 
     def pre_close_connection(self):

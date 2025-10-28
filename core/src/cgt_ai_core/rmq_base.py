@@ -33,7 +33,7 @@ class RmqBase:
         self._stop_completed_event = asyncio.Event()
 
     def open_connection(self):
-        LOGGER.info(
+        LOGGER.debug(
             'Opening connection to %s:%s with credentials %s:%s...',
             self.connection_params.host,
             self.connection_params.port,
@@ -49,20 +49,20 @@ class RmqBase:
         )
 
     def close_connection(self):
-        LOGGER.info('Closing connection...')
+        LOGGER.debug('Closing connection...')
         if self._connection:
             if self._connection.is_closing:
-                LOGGER.info('Connection is already closing.')
+                LOGGER.debug('Connection is already closing.')
             elif self._connection.is_closed:
-                LOGGER.info('Connection is already closed')
+                LOGGER.debug('Connection is already closed.')
             else:
                 self._connection.close()
-                LOGGER.info('Connection closed!')
+                LOGGER.debug('Connection closed.')
         else:
-            LOGGER.info('No connection to close.')
+            LOGGER.debug('No connection to close.')
 
     def on_connection_open(self, _unused_connection: AsyncioConnection):
-        LOGGER.info('Connection opened!')
+        LOGGER.debug('Connection opened!')
         self.open_channel()
 
     def on_connection_open_error(self, _unused_connection: AsyncioConnection, ex: BaseException):
@@ -71,28 +71,28 @@ class RmqBase:
 
     def on_connection_closed(self, _unused_connection: AsyncioConnection, ex: BaseException):
         if self._closing:
-            LOGGER.info('Connection closed as part of shutdown: %s', ex)
+            LOGGER.debug('Connection closed as part of shutdown.')
             self._stop_completed_event.set() # Signal that stop() process is complete
         else:
             LOGGER.exception('Connection closed unexpectedly.', exc_info=ex)
             self.stop()
 
     def open_channel(self):
-        LOGGER.info('Opening channel...')
+        LOGGER.debug('Opening channel...')
         self._connection.channel(on_open_callback=self.on_channel_open)
 
     def close_channel(self):
-        LOGGER.info('Closing channel...')
+        LOGGER.debug('Closing channel...')
         if self._channel:
             if self._channel.is_open:
                 self._channel.close()
             else:
-                LOGGER.info('Channel is already closed.')
+                LOGGER.debug('Channel is already closed.')
         else:
-            LOGGER.info('Channel is not open.')
+            LOGGER.debug('Channel is not open.')
 
     def on_channel_open(self, channel: Channel):
-        LOGGER.info('Channel opened!')
+        LOGGER.debug('Channel opened!')
         self._channel = channel
         self._channel.add_on_close_callback(self.on_channel_closed)
         self.declare_exchange()
@@ -102,7 +102,7 @@ class RmqBase:
         self._channel = None
 
     def declare_exchange(self):
-        LOGGER.info('Declaring exchange with name %s and type %s...', self.exchange_name, self.exchange_type)
+        LOGGER.debug('Declaring exchange with name %s and type %s...', self.exchange_name, self.exchange_type)
         self._channel.exchange_declare(
             exchange=self.exchange_name,
             exchange_type=self.exchange_type,
@@ -110,24 +110,24 @@ class RmqBase:
         )
 
     def on_exchange_declare_ok(self, _unused_method_frame: Method):
-        LOGGER.info('Exchange %s declared!', self.exchange_name)
+        LOGGER.debug('Exchange %s declared!', self.exchange_name)
         self.declare_queue()
 
     def declare_queue(self):
-        LOGGER.info('Declaring queue %s...', self.queue_name if self.queue_name else 'anonymously')
+        LOGGER.debug('Declaring queue %s...', self.queue_name if self.queue_name else 'anonymously')
         self._channel.queue_declare(queue=self.queue_name, callback=self.on_queue_declare_ok)
 
     def on_queue_declare_ok(self, method_frame: Method):
         assigned_queue_name = method_frame.method.queue
-        LOGGER.info('Queue %s declared!', assigned_queue_name)
+        LOGGER.debug('Queue %s declared!', assigned_queue_name)
         # Update self.queue_name if it was assigned anonymously
         if not self.queue_name:
             self.queue_name = assigned_queue_name
         self.bind_queue()
 
     def bind_queue(self):
-        LOGGER.info('Binding queue %s to exchange %s with routing key %s...',
-                    self.queue_name, self.exchange_name, self.routing_key)
+        LOGGER.debug('Binding queue %s to exchange %s with routing key %s...',
+                     self.queue_name, self.exchange_name, self.routing_key)
         self._channel.queue_bind(
             queue=self.queue_name,
             exchange=self.exchange_name,
@@ -136,8 +136,8 @@ class RmqBase:
         )
 
     def on_queue_bind_ok(self, _unused_method_frame: Method):
-        LOGGER.info('Queue %s successfully bound to exchange %s with routing key %s!',
-                    self.queue_name, self.exchange_name, self.routing_key)
+        LOGGER.debug('Queue %s successfully bound to exchange %s with routing key %s!',
+                     self.queue_name, self.exchange_name, self.routing_key)
         self.post_queue_bind()
 
     def post_queue_bind(self):
@@ -175,9 +175,9 @@ class RmqBase:
             try:
                 await self._stop_completed_event.wait()
             except asyncio.CancelledError as exc:
-                LOGGER.exception('Stop cancelled', exc_info=exc)
+                LOGGER.exception('Stop cancelled.', exc_info=exc)
             except Exception as exc:
-                LOGGER.exception('Unhandled exception', exc_info=exc)
+                LOGGER.exception('Unhandled exception.', exc_info=exc)
 
             LOGGER.info('Stop completed.')
             return
@@ -199,9 +199,9 @@ class RmqBase:
         try:
             await self._stop_completed_event.wait()
         except asyncio.CancelledError as exc:
-            LOGGER.exception('Stop cancelled', exc_info=exc)
+            LOGGER.exception('Stop cancelled.', exc_info=exc)
         except Exception as exc:
-            LOGGER.exception('Unhandled exception', exc_info=exc)
+            LOGGER.exception('Unhandled exception.', exc_info=exc)
 
         LOGGER.info('Stop completed.')
 

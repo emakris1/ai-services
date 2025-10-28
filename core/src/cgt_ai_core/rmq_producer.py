@@ -39,7 +39,7 @@ class RmqProducer(RmqBase, Generic[T]):
         self.enable_delivery_confirmations()
 
     def enable_delivery_confirmations(self):
-        LOGGER.info('Enabling delivery confirmations...')
+        LOGGER.debug('Enabling delivery confirmations...')
         self._channel.confirm_delivery(self.on_delivery_confirmation)
 
         LOGGER.info('Producer is ready to publish messages!')
@@ -50,7 +50,7 @@ class RmqProducer(RmqBase, Generic[T]):
         ack_multiple = method_frame.method.multiple
         delivery_tag = method_frame.method.delivery_tag
 
-        LOGGER.info('Received %s for delivery tag: %i (multiple: %s)',
+        LOGGER.debug('Received %s for delivery tag: %i (multiple: %s)',
                     confirmation_type, delivery_tag, ack_multiple)
 
         if confirmation_type == 'ack':
@@ -70,8 +70,8 @@ class RmqProducer(RmqBase, Generic[T]):
         entries and decide to attempt re-delivery
         """
 
-        LOGGER.info('Published %i messages; %i awaiting confirmation, %i were acked, and %i were nacked',
-                    self._message_number, len(self._deliveries), self._acked, self._nacked)
+        LOGGER.debug('Published %i messages; %i awaiting confirmation, %i were acked, and %i were nacked',
+                     self._message_number, len(self._deliveries), self._acked, self._nacked)
 
     def publish_message(self, message: T):
         if self._channel is None:
@@ -81,7 +81,7 @@ class RmqProducer(RmqBase, Generic[T]):
             LOGGER.warning('Channel is not open! Skipping publish of message.')
             return
 
-        LOGGER.info('Publishing message %s...', message)
+        LOGGER.debug('Publishing message %s...', message)
         self._channel.basic_publish(
             exchange=self.exchange_name,
             routing_key=self.routing_key,
@@ -90,7 +90,7 @@ class RmqProducer(RmqBase, Generic[T]):
         )
         self._message_number += 1
         self._deliveries[self._message_number] = True
-        LOGGER.info('Published message #%i with content %s!', self._message_number, message)
+        LOGGER.debug('Published message #%i with content %s!', self._message_number, message)
 
     def pre_open_connection(self):
         self._deliveries = {}

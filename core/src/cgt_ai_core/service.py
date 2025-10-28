@@ -56,9 +56,9 @@ class Service:
         try:
             await asyncio.gather(*run_coroutines)
         except asyncio.CancelledError as exc:
-            LOGGER.exception('Run cancelled', exc_info=exc)
+            LOGGER.exception('Run cancelled.', exc_info=exc)
         except Exception as exc:
-            LOGGER.exception('Unhandled exception', exc_info=exc)
+            LOGGER.exception('Unhandled exception.', exc_info=exc)
         finally:
             await self.stop()
 
@@ -68,8 +68,8 @@ class Service:
         try:
             await asyncio.gather(*stop_coroutines)
         except asyncio.CancelledError as exc:
-            LOGGER.exception('Stop cancelled', exc_info=exc)
+            LOGGER.exception('Stop cancelled.', exc_info=exc)
         except Exception as exc:
-            LOGGER.exception('Unhandled exception', exc_info=exc)
+            LOGGER.exception('Unhandled exception.', exc_info=exc)
         self.is_running = False
         LOGGER.info('Stop completed.')
