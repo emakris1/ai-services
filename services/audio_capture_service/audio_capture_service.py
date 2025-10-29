@@ -30,15 +30,40 @@ class AudioCaptureService(Service):
                  sample_rate: int = None):
         super().__init__(host, port, username, password)
 
-        if device_index is None:
+        if device_index is not None:
+            self.device: dict = sd.query_devices(device_index)
+        else:
             LOGGER.info('No audio device index provided. Sampling from default input audio device.')
             self.device: dict = sd.query_devices(kind='input')
-        else:
-            self.device: dict = sd.query_devices(device_index)
         self.device_index: int = self.device['index']
         self.device_name: str = self.device['name']
-        self.channels: int = channels or self.device['max_input_channels']
-        self.sample_rate: int = sample_rate or self.device['default_samplerate']
+
+        if channels is not None:
+            self.channels: int = channels
+        else:
+            max_input_channels = self.device['max_input_channels']
+            LOGGER.info(
+                'No channel count provided. Sampling from audio device max of %d channel(s).',
+                max_input_channels
+            )
+            self.channels: int = max_input_channels
+
+        if sample_rate is not None:
+            self.sample_rate: int = sample_rate
+        else:
+            default_sample_rate = self.device['default_samplerate']
+            LOGGER.info(
+                'No sample rate provided. Sampling at audio device default of %d Hz.',
+                default_sample_rate
+            )
+            self.sample_rate: int = default_sample_rate
+
+        try:
+            sd.check_input_settings(device=self.device_index, channels=self.channels, samplerate=self.sample_rate)
+        except sd.PortAudioError as exc:
+            LOGGER.exception('Invalid audio device settings', exc_info=exc)
+            raise exc
+
         LOGGER.info(
             'Sampling %d channels at a rate of %d Hz from audio device {index: %d, name: %s}',
             self.channels,
