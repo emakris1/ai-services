@@ -13,13 +13,13 @@ from cgt_ai_core.service import Service
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
 from cgt_ai_core.service_runner import run_service
 
-from messages import SpeechCaptureMessage
+from messages import AudioCaptureMessage
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-class SpeechCaptureService(Service):
+class AudioCaptureService(Service):
     def __init__(self,
                  host: str = None,
                  port: int = None,
@@ -47,29 +47,29 @@ class SpeechCaptureService(Service):
             self.device_name
         )
 
-        self.speech_capture_producer: RmqProducer | None = None
+        self.audio_capture_producer: RmqProducer | None = None
         self.add_producer(
             RmqProducer(
-                on_producer_ready_callback=self.on_speech_capture_producer_ready,
+                on_producer_ready_callback=self.on_audio_capture_producer_ready,
                 connection_params=self.connection_params,
-                exchange_name='speech_capture',
+                exchange_name='audio_capture',
                 exchange_type=ExchangeType.direct
             )
         )
 
-    def on_speech_capture_producer_ready(self, producer: RmqProducer):
-        self.speech_capture_producer = producer
+    def on_audio_capture_producer_ready(self, producer: RmqProducer):
+        self.audio_capture_producer = producer
         asyncio.create_task(self.start_publishing())
 
     async def start_publishing(self):
         async for input_stream_data in self.input_stream_generator():
-            message = SpeechCaptureMessage(
+            message = AudioCaptureMessage(
                 channels=self.channels,
                 sample_rate=self.sample_rate,
                 samples=input_stream_data.tobytes()
             )
-            LOGGER.info('Publishing speech capture message with %d samples', input_stream_data.size)
-            self.speech_capture_producer.publish_message(message)
+            LOGGER.info('Publishing audio capture message with %d samples', input_stream_data.size)
+            self.audio_capture_producer.publish_message(message)
 
     async def input_stream_generator(self):
         """Generator that yields blocks of input data as NumPy arrays."""
@@ -99,7 +99,7 @@ class SpeechCaptureService(Service):
 
 
 async def main():
-    parser = get_service_arg_parser(description='Speech Capture Service')
+    parser = get_service_arg_parser(description='Audio Capture Service')
     device_group = parser.add_argument_group('Device Arguments')
     device_group.add_argument('-x', '--device-index', type=int, default=None,
                               help='Index of audio device to sample')
@@ -124,7 +124,7 @@ async def main():
                 LOGGER.exception('Invalid audio device index provided.', exc_info=exc)
                 args.device_index = None
 
-    service = SpeechCaptureService(
+    service = AudioCaptureService(
         host=args.rmq_host,
         port=args.rmq_port,
         username=args.rmq_username,
