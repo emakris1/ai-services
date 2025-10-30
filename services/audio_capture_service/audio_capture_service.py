@@ -84,9 +84,9 @@ class AudioCaptureService(Service):
 
     def on_audio_capture_producer_ready(self, producer: RmqProducer):
         self.audio_capture_producer = producer
-        asyncio.create_task(self.start_publishing())
+        asyncio.create_task(self.start_sampling())
 
-    async def start_publishing(self):
+    async def start_sampling(self):
         async for input_stream_data in self.input_stream_generator():
             message = AudioCaptureMessage(
                 channels=self.channels,
