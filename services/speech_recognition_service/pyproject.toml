@@ -1,0 +1,11 @@
+[project]
+name = "cgt-ai-speech-recognition-service"
+version = "0.1.0"
+description = "Consumes audio capture messages to deciper the text of the speech in those audio samples, and publishes messages containing that text to a message queue" 
+requires-python = ">=3.13"
+dependencies = [
+    "cgt-ai-core"
+]
+
+[tool.uv.sources]
+cgt-ai-core = { path = "../../core" }
