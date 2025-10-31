@@ -21,10 +21,9 @@ class RmqProducer(RmqBase, Generic[T]):
                  connection_params: ConnectionParameters,
                  exchange_name: str,
                  exchange_type: ExchangeType,
-                 queue_name: str = '',
-                 routing_key: str = None,
+                 routing_key: str = '',
                  on_producer_ready_callback: Callable[['RmqProducer[T]'], None] = lambda _producer: None):
-        super().__init__(connection_params, exchange_name, exchange_type, queue_name, routing_key)
+        super().__init__(connection_params, exchange_name, exchange_type, routing_key)
 
         self.on_producer_ready_callback = on_producer_ready_callback
 

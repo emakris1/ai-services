@@ -16,13 +16,11 @@ class RmqBase:
                  connection_params: ConnectionParameters,
                  exchange_name: str,
                  exchange_type: ExchangeType,
-                 queue_name: str = '',
-                 routing_key: str = None):
+                 routing_key: str = ''):
         self.connection_params = connection_params
         self.exchange_name = exchange_name
         self.exchange_type = exchange_type
-        self.queue_name = queue_name
-        self.routing_key = routing_key if routing_key else queue_name
+        self.routing_key = routing_key
 
         self.connection = None
         self.channel = None
@@ -98,7 +96,7 @@ class RmqBase:
             LOGGER.debug('Channel is not open.')
 
     def on_channel_open(self, channel: Channel):
-        LOGGER.debug('Channel opened!')
+        LOGGER.debug('Channel %s opened!', channel.channel_number)
         self.channel = channel
         self.channel.add_on_close_callback(self.on_channel_closed)
         self.declare_exchange()
@@ -108,7 +106,7 @@ class RmqBase:
         self.channel = None
 
     def declare_exchange(self):
-        LOGGER.debug('Declaring exchange with name %s and type %s...', self.exchange_name, self.exchange_type)
+        LOGGER.debug('Declaring exchange with name "%s" and type "%s"...', self.exchange_name, self.exchange_type)
         self.channel.exchange_declare(
             exchange=self.exchange_name,
             exchange_type=self.exchange_type,
@@ -116,7 +114,7 @@ class RmqBase:
         )
 
     def on_exchange_declare_ok(self, _unused_method_frame: Method):
-        LOGGER.debug('Exchange %s declared!', self.exchange_name)
+        LOGGER.debug('Exchange "%s" declared!', self.exchange_name)
         self.post_exchange_declare()
 
     def post_exchange_declare(self):

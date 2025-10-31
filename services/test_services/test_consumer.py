@@ -35,14 +35,14 @@ class TestConsumer(Service):
         self.bar_consumer = consumer
 
     @staticmethod
-    def on_foo_message(exchange_name: str, queue_name: str, routing_key: str, message: FooMessage):
-        LOGGER.info('Received foo message on queue %s through routing key %s from exchange %s: %s',
-                    queue_name, routing_key, exchange_name, message)
+    def on_foo_message(consumer: RmqConsumer, message: FooMessage):
+        LOGGER.info('Received foo message on queue "%s" through routing key "%s" from exchange "%s": %s',
+                    consumer.queue_name, consumer.routing_key, consumer.exchange_name, message)
 
     @staticmethod
-    def on_bar_message(exchange_name: str, queue_name: str, routing_key: str, message: BarMessage):
-        LOGGER.info('Received bar message on queue %s through routing key %s from exchange %s: %s',
-                    queue_name, routing_key, exchange_name, message)
+    def on_bar_message(consumer: RmqConsumer, message: BarMessage):
+        LOGGER.info('Received bar message on queue "%s" through routing key "%s" from exchange "%s": %s',
+                    consumer.queue_name, consumer.routing_key, consumer.exchange_name, message)
 
 
 async def main():
