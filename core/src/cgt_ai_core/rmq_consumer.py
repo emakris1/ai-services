@@ -39,7 +39,34 @@ class RmqConsumer(RmqBase, Generic[T]):
 
         self.decoder = msgspec.json.Decoder()
 
-    def post_queue_bind(self):
+    def post_exchange_declare(self):
+        self.declare_queue()
+
+    def declare_queue(self):
+        LOGGER.debug('Declaring queue %s...', self.queue_name if self.queue_name else 'anonymously')
+        self.channel.queue_declare(queue=self.queue_name, callback=self.on_queue_declare_ok)
+
+    def on_queue_declare_ok(self, method_frame: Method):
+        assigned_queue_name = method_frame.method.queue
+        LOGGER.debug('Queue %s declared!', assigned_queue_name)
+        # Update self.queue_name if it was assigned anonymously
+        if not self.queue_name:
+            self.queue_name = assigned_queue_name
+        self.bind_queue()
+
+    def bind_queue(self):
+        LOGGER.debug('Binding queue %s to exchange %s with routing key %s...',
+                     self.queue_name, self.exchange_name, self.routing_key)
+        self.channel.queue_bind(
+            queue=self.queue_name,
+            exchange=self.exchange_name,
+            routing_key=self.routing_key,
+            callback=self.on_queue_bind_ok
+        )
+
+    def on_queue_bind_ok(self, _unused_method_frame: Method):
+        LOGGER.debug('Queue %s successfully bound to exchange %s with routing key %s!',
+                     self.queue_name, self.exchange_name, self.routing_key)
         self.set_qos()
 
     def set_qos(self):

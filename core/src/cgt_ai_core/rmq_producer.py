@@ -35,7 +35,7 @@ class RmqProducer(RmqBase, Generic[T]):
 
         self.encoder = msgspec.json.Encoder()
 
-    def post_queue_bind(self):
+    def post_exchange_declare(self):
         self.enable_delivery_confirmations()
 
     def enable_delivery_confirmations(self):
