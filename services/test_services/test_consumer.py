@@ -28,8 +28,26 @@ class TestConsumer(Service):
 
         self.foo_consumer = None
         self.bar_consumer = None
-        self.add_consumer(RmqConsumer(connection_params=self.connection_params, exchange_name='foo', routing_key=self.routing_key, exchange_type=ExchangeType.direct, on_consumer_ready_callback=self.on_foo_consumer_ready, on_message_callback=self.on_foo_message))
-        self.add_consumer(RmqConsumer(connection_params=self.connection_params, exchange_name='bar', routing_key=self.routing_key, exchange_type=ExchangeType.direct, on_consumer_ready_callback=self.on_bar_consumer_ready, on_message_callback=self.on_bar_message))
+        self.add_consumer(
+            RmqConsumer(
+                connection_params=self.connection_params,
+                exchange_name='foo',
+                routing_key=self.routing_key,
+                exchange_type=ExchangeType.direct,
+                on_consumer_ready_callback=self.on_foo_consumer_ready,
+                on_message_callback=self.on_foo_message
+            )
+        )
+        self.add_consumer(
+            RmqConsumer(
+                connection_params=self.connection_params,
+                exchange_name='bar',
+                routing_key=self.routing_key,
+                exchange_type=ExchangeType.direct,
+                on_consumer_ready_callback=self.on_bar_consumer_ready,
+                on_message_callback=self.on_bar_message
+            )
+        )
 
     def on_foo_consumer_ready(self, consumer: RmqConsumer):
         self.foo_consumer = consumer
@@ -56,7 +74,13 @@ async def main():
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level), format=LOG_FORMAT)
-    service = TestConsumer(routing_key=args.routing_key, host=args.rmq_host, port=args.rmq_port, username=args.rmq_username, password=args.rmq_password)
+    service = TestConsumer(
+        routing_key=args.routing_key,
+        host=args.rmq_host,
+        port=args.rmq_port,
+        username=args.rmq_username,
+        password=args.rmq_password
+    )
     await run_service(service)
 
 if __name__ == '__main__':

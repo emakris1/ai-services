@@ -33,8 +33,24 @@ class TestProducer(Service):
 
         self.foo_producer = None
         self.bar_producer = None
-        self.add_producer(RmqProducer(connection_params=self.connection_params, exchange_name='foo', routing_key=self.routing_key, exchange_type=ExchangeType.direct, on_producer_ready_callback=self.on_foo_producer_ready))
-        self.add_producer(RmqProducer(connection_params=self.connection_params, exchange_name='bar', routing_key=self.routing_key, exchange_type=ExchangeType.direct, on_producer_ready_callback=self.on_bar_producer_ready))
+        self.add_producer(
+            RmqProducer(
+                connection_params=self.connection_params,
+                exchange_name='foo',
+                routing_key=self.routing_key,
+                exchange_type=ExchangeType.direct,
+                on_producer_ready_callback=self.on_foo_producer_ready
+            )
+        )
+        self.add_producer(
+            RmqProducer(
+                connection_params=self.connection_params,
+                exchange_name='bar',
+                routing_key=self.routing_key,
+                exchange_type=ExchangeType.direct,
+                on_producer_ready_callback=self.on_bar_producer_ready
+            )
+        )
 
     def on_foo_producer_ready(self, producer: RmqProducer):
         self.foo_producer = producer
@@ -73,7 +89,14 @@ async def main():
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level), format=LOG_FORMAT)
-    service = TestProducer(routing_key=args.routing_key, publish_interval=args.publish_interval, host=args.rmq_host, port=args.rmq_port, username=args.rmq_username, password=args.rmq_password)
+    service = TestProducer(
+        routing_key=args.routing_key,
+        publish_interval=args.publish_interval,
+        host=args.rmq_host,
+        port=args.rmq_port,
+        username=args.rmq_username,
+        password=args.rmq_password
+    )
     await run_service(service)
 
 if __name__ == '__main__':
