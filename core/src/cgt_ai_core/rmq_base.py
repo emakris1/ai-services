@@ -16,13 +16,11 @@ class RmqBase:
                  connection_params: ConnectionParameters,
                  exchange_name: str,
                  exchange_type: ExchangeType,
-                 queue_name: str = '',
-                 routing_key: str = None):
+                 routing_key: str = ''):
         self.connection_params = connection_params
         self.exchange_name = exchange_name
         self.exchange_type = exchange_type
-        self.queue_name = queue_name
-        self.routing_key = routing_key if routing_key else queue_name
+        self.routing_key = routing_key
 
         self.connection = None
         self.channel = None
@@ -31,6 +29,9 @@ class RmqBase:
 
         self.run_should_stop_event = asyncio.Event()
         self.stop_completed_event = asyncio.Event()
+
+    def pre_open_connection(self):
+        pass
 
     def open_connection(self):
         LOGGER.debug(
@@ -47,6 +48,9 @@ class RmqBase:
             on_open_error_callback=self.on_connection_open_error,
             on_close_callback=self.on_connection_closed
         )
+
+    def pre_close_connection(self):
+        pass
 
     def close_connection(self):
         LOGGER.debug('Closing connection...')
@@ -92,7 +96,7 @@ class RmqBase:
             LOGGER.debug('Channel is not open.')
 
     def on_channel_open(self, channel: Channel):
-        LOGGER.debug('Channel opened!')
+        LOGGER.debug('Channel %s opened!', channel.channel_number)
         self.channel = channel
         self.channel.add_on_close_callback(self.on_channel_closed)
         self.declare_exchange()
@@ -102,7 +106,7 @@ class RmqBase:
         self.channel = None
 
     def declare_exchange(self):
-        LOGGER.debug('Declaring exchange with name %s and type %s...', self.exchange_name, self.exchange_type)
+        LOGGER.debug('Declaring exchange with name "%s" and type "%s"...', self.exchange_name, self.exchange_type)
         self.channel.exchange_declare(
             exchange=self.exchange_name,
             exchange_type=self.exchange_type,
@@ -110,37 +114,10 @@ class RmqBase:
         )
 
     def on_exchange_declare_ok(self, _unused_method_frame: Method):
-        LOGGER.debug('Exchange %s declared!', self.exchange_name)
-        self.declare_queue()
+        LOGGER.debug('Exchange "%s" declared!', self.exchange_name)
+        self.post_exchange_declare()
 
-    def declare_queue(self):
-        LOGGER.debug('Declaring queue %s...', self.queue_name if self.queue_name else 'anonymously')
-        self.channel.queue_declare(queue=self.queue_name, callback=self.on_queue_declare_ok)
-
-    def on_queue_declare_ok(self, method_frame: Method):
-        assigned_queue_name = method_frame.method.queue
-        LOGGER.debug('Queue %s declared!', assigned_queue_name)
-        # Update self.queue_name if it was assigned anonymously
-        if not self.queue_name:
-            self.queue_name = assigned_queue_name
-        self.bind_queue()
-
-    def bind_queue(self):
-        LOGGER.debug('Binding queue %s to exchange %s with routing key %s...',
-                     self.queue_name, self.exchange_name, self.routing_key)
-        self.channel.queue_bind(
-            queue=self.queue_name,
-            exchange=self.exchange_name,
-            routing_key=self.routing_key,
-            callback=self.on_queue_bind_ok
-        )
-
-    def on_queue_bind_ok(self, _unused_method_frame: Method):
-        LOGGER.debug('Queue %s successfully bound to exchange %s with routing key %s!',
-                     self.queue_name, self.exchange_name, self.routing_key)
-        self.post_queue_bind()
-
-    def post_queue_bind(self):
+    def post_exchange_declare(self):
         pass
 
     async def run(self):
@@ -204,9 +181,3 @@ class RmqBase:
             LOGGER.exception('Unhandled exception.', exc_info=exc)
 
         LOGGER.info('Stop completed.')
-
-    def pre_open_connection(self):
-        pass
-
-    def pre_close_connection(self):
-        pass

@@ -24,10 +24,12 @@ class RmqConsumer(RmqBase, Generic[T]):
                  exchange_name: str,
                  exchange_type: ExchangeType,
                  queue_name: str = '',
-                 routing_key: str = None,
+                 routing_key: str = '',
                  on_consumer_ready_callback: Callable[['RmqConsumer[T]'], None] = lambda _consumer: None,
-                 on_message_callback: Callable[[str, str, str, T], None] = lambda _exchange_name, _queue_name, _routing_key, _message: None):
-        super().__init__(connection_params, exchange_name, exchange_type, queue_name, routing_key)
+                 on_message_callback: Callable[['RmqConsumer[T]', T], None] = lambda _consumer, _message: None):
+        super().__init__(connection_params, exchange_name, exchange_type, routing_key)
+
+        self.queue_name = queue_name
 
         self.on_consumer_ready_callback = on_consumer_ready_callback
         self.on_message_callback = on_message_callback
@@ -39,7 +41,34 @@ class RmqConsumer(RmqBase, Generic[T]):
 
         self.decoder = msgspec.json.Decoder()
 
-    def post_queue_bind(self):
+    def post_exchange_declare(self):
+        self.declare_queue()
+
+    def declare_queue(self):
+        LOGGER.debug('Declaring queue "%s"...', self.queue_name if self.queue_name else 'anonymous')
+        self.channel.queue_declare(queue=self.queue_name, callback=self.on_queue_declare_ok)
+
+    def on_queue_declare_ok(self, method_frame: Method):
+        assigned_queue_name = method_frame.method.queue
+        LOGGER.debug('Queue "%s" declared!', assigned_queue_name)
+        # Update self.queue_name if it was assigned anonymously
+        if not self.queue_name:
+            self.queue_name = assigned_queue_name
+        self.bind_queue()
+
+    def bind_queue(self):
+        LOGGER.debug('Binding queue "%s" to exchange "%s" with routing key "%s"...',
+                     self.queue_name, self.exchange_name, self.routing_key)
+        self.channel.queue_bind(
+            queue=self.queue_name,
+            exchange=self.exchange_name,
+            routing_key=self.routing_key,
+            callback=self.on_queue_bind_ok
+        )
+
+    def on_queue_bind_ok(self, _unused_method_frame: Method):
+        LOGGER.debug('Queue "%s" successfully bound to exchange "%s" with routing key "%s"!',
+                     self.queue_name, self.exchange_name, self.routing_key)
         self.set_qos()
 
     def set_qos(self):
@@ -76,7 +105,7 @@ class RmqConsumer(RmqBase, Generic[T]):
         message = self.decoder.decode(body)
         LOGGER.debug('Received message #%d from %s',
                      basic_deliver.delivery_tag, basic_properties.app_id)
-        self.on_message_callback(self.exchange_name, self.queue_name, self.routing_key, message)
+        self.on_message_callback(self, message)
         self.acknowledge_message(basic_deliver.delivery_tag)
 
     def acknowledge_message(self, delivery_tag: int):
