@@ -8,12 +8,11 @@ from typing import Any
 from pika.exchange_type import ExchangeType
 
 from cgt_ai_core.log_config import LOG_FORMAT
+from cgt_ai_core.messages import AudioCaptureMessage
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.service import Service
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
 from cgt_ai_core.service_runner import run_service
-
-from messages import AudioCaptureMessage
 
 
 LOGGER = logging.getLogger(__name__)

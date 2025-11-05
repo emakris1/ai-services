@@ -1,11 +1,10 @@
 import asyncio
 import logging
 
-from typing import Any
-
 from pika.exchange_type import ExchangeType
 
 from cgt_ai_core.log_config import LOG_FORMAT
+from cgt_ai_core.messages import AudioCaptureMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.service import Service
@@ -25,7 +24,7 @@ class SpeechRecognitionService(Service):
         super().__init__(host, port, username, password)
 
         self.event_loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
-        self.audio_capture_queue: asyncio.Queue = asyncio.Queue()
+        self.audio_capture_queue: asyncio.Queue[AudioCaptureMessage] = asyncio.Queue()
 
         self.audio_capture_consumer: RmqConsumer | None = None
         self.add_consumer(
@@ -51,7 +50,7 @@ class SpeechRecognitionService(Service):
     def on_audio_capture_consumer_ready(self, consumer: RmqConsumer):
         self.audio_capture_consumer = consumer
 
-    def on_audio_capture_message(self, consumer: RmqConsumer, message: Any):
+    def on_audio_capture_message(self, consumer: RmqConsumer, message: AudioCaptureMessage):
         LOGGER.info('Received audio capture message on queue %s through routing key %s from exchange %s',
                     consumer.queue_name, consumer.routing_key, consumer.exchange_name)
         self.event_loop.call_soon_threadsafe(self.audio_capture_queue.put_nowait, message)
