@@ -24,10 +24,10 @@ class TestConsumer(Service):
                  routing_key: str = ''):
         super().__init__(host, port, username, password)
 
-        self.routing_key = routing_key
+        self.routing_key: str = routing_key
 
-        self.foo_consumer = None
-        self.bar_consumer = None
+        self.foo_consumer: RmqConsumer | None = None
+        self.bar_consumer: RmqConsumer | None = None
         self.add_consumer(
             RmqConsumer(
                 connection_params=self.connection_params,

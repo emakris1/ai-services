@@ -28,11 +28,11 @@ class TestProducer(Service):
                  publish_interval: float = 1.0):
         super().__init__(host, port, username, password)
 
-        self.routing_key = routing_key
-        self.publish_interval = publish_interval
+        self.routing_key: str = routing_key
+        self.publish_interval: float = publish_interval
 
-        self.foo_producer = None
-        self.bar_producer = None
+        self.foo_producer: RmqProducer | None = None
+        self.bar_producer: RmqProducer | None = None
         self.add_producer(
             RmqProducer(
                 connection_params=self.connection_params,
