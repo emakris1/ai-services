@@ -1,4 +1,4 @@
-import 'package:app/cubits/navigation_cubit.dart';
+import 'package:app/cubits/action_mapping_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -7,7 +7,7 @@ class NavigationSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<NavigationCubit, AppPage>(
+    return BlocBuilder<ActionMappingCubit, ActionMappingState>(
       builder: (context, state) {
         return ListView(
           padding: EdgeInsets.zero,
@@ -23,14 +23,14 @@ class NavigationSidebar extends StatelessWidget {
             NavigationTile(
               title: 'Driver',
               icon: Icons.directions_car_rounded,
-              page: AppPage.driver,
-              state: state,
+              actor: Actor.driver,
+              isSelected: state.selectedActor == Actor.driver,
             ),
             NavigationTile(
               title: 'Gunner',
               icon: Icons.person_rounded,
-              page: AppPage.gunner,
-              state: state,
+              actor: Actor.gunner,
+              isSelected: state.selectedActor == Actor.gunner,
             ),
           ],
         );
@@ -42,26 +42,26 @@ class NavigationSidebar extends StatelessWidget {
 class NavigationTile extends StatelessWidget {
   final String title;
   final IconData icon;
-  final AppPage page;
-  final AppPage state;
+  final Actor actor;
+  final bool isSelected;
 
   const NavigationTile({
     super.key,
     required this.title,
     required this.icon,
-    required this.page,
-    required this.state,
+    required this.actor,
+    required this.isSelected,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      selected: state == page,
+      selected: isSelected,
       leading: Icon(icon),
       title: Text(title),
       onTap: () {
         Navigator.pop(context);
-        context.read<NavigationCubit>().selectPage(page);
+        context.read<ActionMappingCubit>().selectActor(actor);
       },
     );
   }
