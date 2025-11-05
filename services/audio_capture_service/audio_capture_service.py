@@ -104,7 +104,6 @@ class AudioCaptureService(Service):
         def callback(indata: numpy.ndarray, frames: int, _unused_time: Any, _unused_status: sd.CallbackFlags):
             LOGGER.debug('Received %d frames of input stream data.', frames)
             try:
-                #q_in.put_nowait(indata.copy())
                 loop.call_soon_threadsafe(q_in.put_nowait, indata.copy())
             except asyncio.QueueFull as exc:
                 LOGGER.exception('Input stream queue is full. Discarding input stream data.', exc_info=exc)
