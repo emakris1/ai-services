@@ -8,20 +8,10 @@ const String mappingsFileLocation = 'assets/action_mappings.json';
 class ActionMappingRepository {
   Future<Map<String, dynamic>> _loadJson() async {
     final jsonString = await rootBundle.loadString(mappingsFileLocation);
-    final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
-
-    return decoded.map((actor, actions) {
-      final actionMap = (actions as Map<String, dynamic>).map((
-        action,
-        phrases,
-      ) {
-        return MapEntry(action, List<String>.from(phrases));
-      });
-      return MapEntry(actor, actionMap);
-    });
+    return jsonDecode(jsonString) as Map<String, dynamic>;
   }
 
-  Future<void> _saveJson(Map<String, ActionPhraseMap> data) async {
+  Future<void> _saveJson(Map<String, dynamic> data) async {
     final file = File(mappingsFileLocation);
     final encoder = const JsonEncoder.withIndent('  ');
     final prettyString = encoder.convert(data);
@@ -29,26 +19,46 @@ class ActionMappingRepository {
     await file.writeAsString(prettyString);
   }
 
-  Future<ActionMapping> read() async {
-    final data = await _loadJson();
-    ActionMapping actionMapping = {};
+  ActionMapping fromDomain(Map<String, dynamic> data) {
+    ActionMapping mapping = {};
 
-    data.forEach((actorName, actionPhraseMap) {
+    data.forEach((actorName, actionPhraseMapRaw) {
       Actor actor = Actor.values.byName(actorName.split('.').last);
-      actionMapping[actor] = actionPhraseMap;
+
+      final actionPhraseMap = <String, List<String>>{};
+      (actionPhraseMapRaw as Map<String, dynamic>).forEach((
+        action,
+        phrasesRaw,
+      ) {
+        actionPhraseMap[action] = List<String>.from(
+          phrasesRaw as List<dynamic>,
+        );
+      });
+
+      mapping[actor] = actionPhraseMap;
     });
 
-    return actionMapping;
+    return mapping;
   }
 
-  Future<void> write(ActionMapping mappings) async {
+  Map<String, dynamic> toDomain(ActionMapping mapping) {
     Map<String, ActionPhraseMap> data = {};
 
-    mappings.forEach((actor, actionPhraseMap) {
+    mapping.forEach((actor, actionPhraseMap) {
       String actorName = actor.toString();
       data[actorName] = actionPhraseMap;
     });
 
+    return data;
+  }
+
+  Future<ActionMapping> read() async {
+    final data = await _loadJson();
+    return fromDomain(data);
+  }
+
+  Future<void> write(ActionMapping mapping) async {
+    Map<String, dynamic> data = toDomain(mapping);
     return await _saveJson(data);
   }
 }

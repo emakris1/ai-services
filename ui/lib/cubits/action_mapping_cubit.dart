@@ -1,4 +1,6 @@
 import 'package:app/data/repo/action_mapping_repository.dart';
+import 'package:app/messaging/rabbitmq_connection.dart';
+import 'package:app/messaging/rabbitmq_producer.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 enum Actor { driver, gunner }
@@ -39,6 +41,8 @@ class ActionMappingState {
 
 class ActionMappingCubit extends Cubit<ActionMappingState> {
   final ActionMappingRepository repo = ActionMappingRepository();
+  final RabbitMQConnection connection = RabbitMQConnection();
+  late final RabbitMQProducer producer;
 
   ActionMappingCubit()
     : super(
@@ -53,6 +57,11 @@ class ActionMappingCubit extends Cubit<ActionMappingState> {
   }
 
   Future<void> _init() async {
+    producer = RabbitMQProducer(
+      connection: connection,
+      queueName: "action_mappings",
+    );
+
     final data = await repo.read();
     emit(
       ActionMappingState(
@@ -127,5 +136,10 @@ class ActionMappingCubit extends Cubit<ActionMappingState> {
       updated[actor] = actorMap;
       _update(state.copyWith(mappings: updated));
     }
+  }
+
+  void publishMappings() {
+    Map<String, dynamic> message = repo.toDomain(state.mappings);
+    producer.publish(message);
   }
 }

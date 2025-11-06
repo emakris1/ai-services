@@ -18,7 +18,7 @@ def get_service_arg_parser(description: str):
                                   help='RabbitMQ server password')
 
     logging_group = parser.add_argument_group('Logging Arguments')
-    logging_group.add_argument('-l', '--log-level', default='WARNING',
+    logging_group.add_argument('-l', '--log-level', default='INFO',
                                choices=logging.getLevelNamesMapping().keys(), help='Logging level')
 
     return parser

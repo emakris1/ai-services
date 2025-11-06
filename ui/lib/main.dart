@@ -42,7 +42,10 @@ class MainApp extends StatelessWidget {
           actions: [
             IconButton(
               icon: const Icon(Icons.play_arrow_rounded),
-              onPressed: () {},
+              onPressed: () {
+                final cubit = context.read<ActionMappingCubit>();
+                cubit.publishMappings();
+              },
               iconSize: 26,
             ),
             const SizedBox(width: 12),
