@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import numpy as np
 
 from pika.exchange_type import ExchangeType
 
@@ -25,6 +26,7 @@ class SpeechRecognitionService(Service):
 
         self.event_loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
         self.audio_capture_queue: asyncio.Queue[AudioCaptureMessage] = asyncio.Queue()
+        self.aggregated_samples_buffer: np.ndarray | None = None
 
         self.audio_capture_consumer: RmqConsumer | None = None
         self.add_consumer(
@@ -51,20 +53,40 @@ class SpeechRecognitionService(Service):
     def on_audio_capture_consumer_ready(self, consumer: RmqConsumer):
         self.audio_capture_consumer = consumer
 
-    def on_audio_capture_message(self, consumer: RmqConsumer, message: AudioCaptureMessage):
-        LOGGER.info('Received audio capture message on queue %s through routing key %s from exchange %s',
-                    consumer.queue_name, consumer.routing_key, consumer.exchange_name)
+    def on_audio_capture_message(self, _unused_consumer: RmqConsumer, message: AudioCaptureMessage):
         self.event_loop.call_soon_threadsafe(self.audio_capture_queue.put_nowait, message)
 
     def on_speech_recognition_producer_ready(self, producer: RmqProducer):
         self.speech_recognition_producer = producer
-        asyncio.create_task(self.process_audio())
+        asyncio.create_task(self.process_audio_captures())
 
-    async def process_audio(self):
+    async def process_audio_captures(self):
+            async for message in self.audio_capture_generator():
+                self.aggregate_samples(message)
+
+    async def audio_capture_generator(self):
         while True:
-            message = await self.audio_capture_queue.get()
-            LOGGER.info('Processing audio message')
-            self.audio_capture_queue.task_done()
+            yield await self.audio_capture_queue.get()
+
+    def aggregate_samples(self, message: AudioCaptureMessage):
+        flat_buffer = np.frombuffer(message.samples, np.float32)
+        frames = flat_buffer.size // message.channels
+        shaped_buffer = flat_buffer.reshape(frames, message.channels)
+        if self.aggregated_samples_buffer is None:
+            self.aggregated_samples_buffer = shaped_buffer.copy()
+        else:
+            if self.aggregated_samples_buffer.shape[1] != shaped_buffer.shape[1]:
+                LOGGER.warning(
+                    "Channel mismatch on existing aggregated sample buffer and received sample buffer:"
+                    "existing %d vs incoming %d. Dropping previously aggregated samples.",
+                    self.aggregated_samples_buffer.shape[1], shaped_buffer.shape[1]
+                )
+                self.aggregated_samples_buffer = shaped_buffer.copy()
+            else:
+                self.aggregated_samples_buffer = np.concatenate(
+                    (self.aggregated_samples_buffer, shaped_buffer),
+                    axis=0
+                )
 
 
 async def main():
