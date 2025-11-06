@@ -50,7 +50,7 @@ class AudioCaptureService(Service):
         if sample_rate is not None:
             self.sample_rate: int = sample_rate
         else:
-            default_sample_rate = self.device['default_samplerate']
+            default_sample_rate = int(self.device['default_samplerate'])
             LOGGER.info(
                 'No sample rate provided. Sampling at audio device default of %d Hz.',
                 default_sample_rate
