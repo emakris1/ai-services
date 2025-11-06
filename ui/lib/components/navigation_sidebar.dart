@@ -17,7 +17,7 @@ class NavigationSidebar extends StatelessWidget {
               child: DrawerHeader(
                 margin: EdgeInsets.zero,
                 padding: EdgeInsets.all(16),
-                child: Text('Select Actor', style: TextStyle(fontSize: 20)),
+                child: Text('Select an Actor', style: TextStyle(fontSize: 20)),
               ),
             ),
             NavigationTile(

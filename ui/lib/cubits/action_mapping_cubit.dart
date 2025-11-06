@@ -1,3 +1,4 @@
+import 'package:app/data/repo/action_mapping_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 enum Actor { driver, gunner }
@@ -6,9 +7,10 @@ typedef Action = String;
 typedef Phrase = String;
 
 typedef ActionPhraseMap = Map<Action, List<Phrase>>;
+typedef ActionMapping = Map<Actor, ActionPhraseMap>;
 
 class ActionMappingState {
-  final Map<Actor, ActionPhraseMap> mappings;
+  final ActionMapping mappings;
   final Actor? selectedActor;
   final Action? selectedAction;
   final Phrase? selectedPhrase;
@@ -21,7 +23,7 @@ class ActionMappingState {
   });
 
   ActionMappingState copyWith({
-    Map<Actor, ActionPhraseMap>? mappings,
+    ActionMapping? mappings,
     Actor? selectedActor,
     Action? selectedAction,
     Phrase? selectedPhrase,
@@ -36,15 +38,36 @@ class ActionMappingState {
 }
 
 class ActionMappingCubit extends Cubit<ActionMappingState> {
-  ActionMappingCubit(Map<Actor, ActionPhraseMap> initial)
+  final ActionMappingRepository repo = ActionMappingRepository();
+
+  ActionMappingCubit(ActionMapping initial)
     : super(
         ActionMappingState(
-          mappings: initial,
-          selectedActor: initial.keys.first,
-          selectedAction: initial.values.first.keys.first,
-          selectedPhrase: initial.values.first.values.first.first,
+          mappings: {},
+          selectedActor: null,
+          selectedAction: null,
+          selectedPhrase: null,
         ),
-      );
+      ) {
+    _init();
+  }
+
+  Future<void> _init() async {
+    final data = await repo.read();
+    emit(
+      ActionMappingState(
+        mappings: data,
+        selectedActor: data.keys.first,
+        selectedAction: data.values.first.keys.first,
+        selectedPhrase: data.values.first.values.first.first,
+      ),
+    );
+  }
+
+  void _update(ActionMappingState newState) {
+    emit(newState);
+    repo.write(newState.mappings);
+  }
 
   void selectActor(Actor actor) {
     final selectedAction = state.mappings[actor]!.keys.first;
@@ -68,17 +91,18 @@ class ActionMappingCubit extends Cubit<ActionMappingState> {
   }
 
   void addPhrase(Actor actor, Action action, Phrase newPhrase) {
-    final updated = Map<Actor, ActionPhraseMap>.from(state.mappings);
+    final updated = ActionMapping.from(state.mappings);
     final actorMap = updated[actor] ?? ActionPhraseMap();
     final phrases = List<Phrase>.from(actorMap[action] ?? []);
     phrases.add(newPhrase);
     actorMap[action] = phrases;
     updated[actor] = actorMap;
-    emit(state.copyWith(mappings: updated));
+
+    _update(state.copyWith(mappings: updated));
   }
 
   void updatePhrase(Actor actor, Action action, int index, Phrase newPhrase) {
-    final updated = Map<Actor, ActionPhraseMap>.from(state.mappings);
+    final updated = ActionMapping.from(state.mappings);
     final actorMap = updated[actor];
     if (actorMap == null) return;
 
@@ -87,12 +111,12 @@ class ActionMappingCubit extends Cubit<ActionMappingState> {
       phrases[index] = newPhrase;
       actorMap[action] = phrases;
       updated[actor] = actorMap;
-      emit(state.copyWith(mappings: updated));
+      _update(state.copyWith(mappings: updated));
     }
   }
 
   void removePhrase(Actor actor, Action action, int index) {
-    final updated = Map<Actor, ActionPhraseMap>.from(state.mappings);
+    final updated = ActionMapping.from(state.mappings);
     final actorMap = updated[actor];
     if (actorMap == null) return;
 
@@ -101,7 +125,7 @@ class ActionMappingCubit extends Cubit<ActionMappingState> {
       phrases.removeAt(index);
       actorMap[action] = phrases;
       updated[actor] = actorMap;
-      emit(state.copyWith(mappings: updated));
+      _update(state.copyWith(mappings: updated));
     }
   }
 }

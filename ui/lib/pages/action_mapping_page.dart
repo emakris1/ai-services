@@ -1,9 +1,9 @@
 import 'package:app/cubits/action_mapping_cubit.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class ActionMapping extends StatelessWidget {
-  const ActionMapping({super.key});
+class ActionMappingPage extends StatelessWidget {
+  const ActionMappingPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -14,11 +14,17 @@ class ActionMapping extends StatelessWidget {
 
     return BlocBuilder<ActionMappingCubit, ActionMappingState>(
       builder: (context, state) {
-        final selectedAction = state.selectedAction!;
-        final selectedActor = state.selectedActor!;
-        final actorActionMappings = state.mappings[selectedActor]!;
-        final actions = actorActionMappings.keys;
-        final phrases = actorActionMappings[selectedAction]!;
+        final selectedAction = state.selectedAction;
+        final selectedActor = state.selectedActor;
+
+        Iterable<Action> actions = [];
+        List<Phrase> phrases = [];
+
+        if (selectedAction != null && selectedActor != null) {
+          final actorActionMappings = state.mappings[selectedActor]!;
+          actions = actorActionMappings.keys;
+          phrases = actorActionMappings[selectedAction]!;
+        }
 
         return LayoutBuilder(
           builder: (context, constraints) {
@@ -131,8 +137,8 @@ class ActionMapping extends StatelessWidget {
                                                             ActionMappingCubit
                                                           >()
                                                           .updatePhrase(
-                                                            selectedActor,
-                                                            selectedAction,
+                                                            selectedActor!,
+                                                            selectedAction!,
                                                             i,
                                                             newValue,
                                                           ),
@@ -152,8 +158,8 @@ class ActionMapping extends StatelessWidget {
                                               onPressed: () => context
                                                   .read<ActionMappingCubit>()
                                                   .removePhrase(
-                                                    selectedActor,
-                                                    selectedAction,
+                                                    selectedActor!,
+                                                    selectedAction!,
                                                     i,
                                                   ),
                                             ),
@@ -176,8 +182,8 @@ class ActionMapping extends StatelessWidget {
                                     onPressed: () => context
                                         .read<ActionMappingCubit>()
                                         .addPhrase(
-                                          selectedActor,
-                                          selectedAction,
+                                          selectedActor!,
+                                          selectedAction!,
                                           "New phrase",
                                         ),
                                   ),

@@ -1,6 +1,6 @@
 import 'package:app/components/navigation_sidebar.dart';
 import 'package:app/cubits/action_mapping_cubit.dart';
-import 'package:app/pages/action_mapping.dart';
+import 'package:app/pages/action_mapping_page.dart';
 import 'package:app/theme/themes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -63,11 +63,13 @@ class MainApp extends StatelessWidget {
         appBar: AppBar(
           title: BlocBuilder<ActionMappingCubit, ActionMappingState>(
             builder: (context, state) {
-              switch (state.selectedActor!) {
+              switch (state.selectedActor) {
                 case Actor.driver:
                   return Text("Driver");
                 case Actor.gunner:
                   return Text("Gunner");
+                default:
+                  return Text("Unknown");
               }
             },
           ),
@@ -81,7 +83,7 @@ class MainApp extends StatelessWidget {
           ],
         ),
         drawer: Drawer(child: NavigationSidebar()),
-        body: ActionMapping(),
+        body: ActionMappingPage(),
       ),
     );
   }
