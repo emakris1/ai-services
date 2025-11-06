@@ -29,6 +29,7 @@ class SpeechRecognitionService(Service):
         self.audio_capture_consumer: RmqConsumer | None = None
         self.add_consumer(
             RmqConsumer(
+                message_type=AudioCaptureMessage,
                 connection_params=self.connection_params,
                 exchange_name='audio_capture',
                 exchange_type=ExchangeType.direct,

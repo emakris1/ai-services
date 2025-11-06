@@ -1,7 +1,7 @@
 import logging
 import msgspec
 
-from typing import Callable, Generic, TypeVar
+from typing import Callable, Generic, Type, TypeVar
 
 from pika import ConnectionParameters
 from pika.channel import Channel
@@ -20,6 +20,7 @@ T = TypeVar("T", bound=msgspec.Struct)
 
 class RmqConsumer(RmqBase, Generic[T]):
     def __init__(self,
+                 message_type: Type[T],
                  connection_params: ConnectionParameters,
                  exchange_name: str,
                  exchange_type: ExchangeType,
@@ -29,6 +30,7 @@ class RmqConsumer(RmqBase, Generic[T]):
                  on_message_callback: Callable[['RmqConsumer[T]', T], None] = lambda _consumer, _message: None):
         super().__init__(connection_params, exchange_name, exchange_type, routing_key)
 
+        self.message_type = message_type
         self.queue_name = queue_name
 
         self.on_consumer_ready_callback = on_consumer_ready_callback
@@ -39,7 +41,8 @@ class RmqConsumer(RmqBase, Generic[T]):
         self.prefetch_count = 0
         self.prefetch_size = 0
 
-        self.decoder = msgspec.json.Decoder()
+        self.decoder = msgspec.json.Decoder(type=self.message_type)
+
 
     def post_exchange_declare(self):
         self.declare_queue()

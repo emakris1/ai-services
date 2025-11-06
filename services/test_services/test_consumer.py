@@ -30,6 +30,7 @@ class TestConsumer(Service):
         self.bar_consumer: RmqConsumer | None = None
         self.add_consumer(
             RmqConsumer(
+                message_type=FooMessage,
                 connection_params=self.connection_params,
                 exchange_name='foo',
                 routing_key=self.routing_key,
@@ -40,6 +41,7 @@ class TestConsumer(Service):
         )
         self.add_consumer(
             RmqConsumer(
+                message_type=BarMessage,
                 connection_params=self.connection_params,
                 exchange_name='bar',
                 routing_key=self.routing_key,
