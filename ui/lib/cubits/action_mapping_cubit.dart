@@ -40,7 +40,7 @@ class ActionMappingState {
 class ActionMappingCubit extends Cubit<ActionMappingState> {
   final ActionMappingRepository repo = ActionMappingRepository();
 
-  ActionMappingCubit(ActionMapping initial)
+  ActionMappingCubit()
     : super(
         ActionMappingState(
           mappings: {},
