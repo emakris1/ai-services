@@ -1,66 +1,35 @@
 {
   "Actor.driver": {
-    "Accelerate": [
-      "Move forwards",
+    "Drive": [
+      "Move forward",
       "Go ahead",
-      "Step on it",
-      "Drive Forward"
+      "Drive forward",
+      "Get moving"
     ],
-    "Brake": [
-      "Slow down",
+    "Halt": [
       "Stop",
-      "Ease up",
-      "Hit the brakes"
-    ],
-    "Turn Left": [
-      "Turn left",
-      "Go left",
-      "Steer left",
-      "Left turn"
-    ],
-    "Turn Right": [
-      "Turn right",
-      "Go right",
-      "Steer right",
-      "Right turn"
-    ],
-    "Horn": [
-      "Honk",
-      "Sound the horn",
-      "Beep",
-      "Alert"
+      "Hold up",
+      "Slow down",
+      "Brake",
+      "Pull over"
     ]
   },
   "Actor.gunner": {
-    "Aim": [
-      "Aim here",
-      "Line up the target",
-      "Get the target in sight",
-      "Focus fire"
-    ],
     "Fire": [
       "Shoot",
       "Fire!",
       "Open fire",
-      "Engage target"
+      "Engage target",
+      "Take the shot",
+      "Light 'em up",
+      "Let 'em have it"
     ],
-    "Reload": [
-      "Reload weapon",
-      "Prepare ammo",
-      "Load again",
-      "Refill rounds"
-    ],
-    "Switch Weapon": [
-      "Change weapon",
-      "Switch guns",
-      "Next weapon",
-      "Swap armament"
-    ],
-    "Spot Target": [
-      "Mark that target",
-      "Spot enemy",
-      "Identify target",
-      "Tag it"
+    "Stop Firing": [
+      "Cease fire",
+      "Hold your fire",
+      "Stop shooting",
+      "Stand down",
+      "Cease engagement"
     ]
   }
 }
