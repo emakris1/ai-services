@@ -1,0 +1,11 @@
+[project]
+name = "cgt-ai-action-mapping-service"
+version = "0.1.0"
+description = "Converts spoken phrases to embeddings, maps those embeddings to preconfigured actions."
+requires-python = ">=3.13"
+dependencies = [
+    "cgt-ai-core",
+]
+
+[tool.uv.sources]
+cgt-ai-core = { path = "../../core" }

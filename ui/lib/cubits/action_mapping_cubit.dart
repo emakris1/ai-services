@@ -1,5 +1,4 @@
 import 'package:app/data/repo/action_mapping_repository.dart';
-import 'package:app/messaging/rabbitmq_connection.dart';
 import 'package:app/messaging/rabbitmq_producer.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -41,8 +40,10 @@ class ActionMappingState {
 
 class ActionMappingCubit extends Cubit<ActionMappingState> {
   final ActionMappingRepository repo = ActionMappingRepository();
-  final RabbitMQConnection connection = RabbitMQConnection();
-  late final RabbitMQProducer producer;
+  final RabbitMQProducer producer = RabbitMQProducer(
+    exchangeName: "action_mappings",
+    routingKey: "action_mapping_service",
+  );
 
   ActionMappingCubit()
     : super(
@@ -57,11 +58,7 @@ class ActionMappingCubit extends Cubit<ActionMappingState> {
   }
 
   Future<void> _init() async {
-    producer = RabbitMQProducer(
-      connection: connection,
-      queueName: "action_mappings",
-    );
-
+    producer.init();
     final data = await repo.read();
     emit(
       ActionMappingState(
