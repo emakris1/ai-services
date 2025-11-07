@@ -1,6 +1,11 @@
 import asyncio
 import logging
 import numpy as np
+import resampy
+import silero_vad
+import torch
+
+from faster_whisper import WhisperModel
 
 from pika.exchange_type import ExchangeType
 
@@ -25,8 +30,15 @@ class SpeechRecognitionService(Service):
         super().__init__(host, port, username, password)
 
         self.event_loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
+
         self.audio_capture_queue: asyncio.Queue[AudioCaptureMessage] = asyncio.Queue()
-        self.aggregated_samples_buffer: np.ndarray | None = None
+
+        self.dtype: np.dtype[np.float32] = np.float32
+        self.sample_rate: int = 16000 # most ASR libraries expect 16kHz so we always resample to this rate
+        self.max_samples: int = self.sample_rate * 10 # only keep the most recent 10s of samples
+        self.samples: np.ndarray = np.empty(shape=0, dtype=self.dtype)
+
+        self.timestamps: list[float] = []
 
         self.audio_capture_consumer: RmqConsumer | None = None
         self.add_consumer(
@@ -50,6 +62,9 @@ class SpeechRecognitionService(Service):
             )
         )
 
+        self.whisper_model = WhisperModel(model_size_or_path='turbo', device='cuda')
+        self.silero_model = silero_vad.load_silero_vad()
+
     def on_audio_capture_consumer_ready(self, consumer: RmqConsumer):
         self.audio_capture_consumer = consumer
 
@@ -62,31 +77,54 @@ class SpeechRecognitionService(Service):
 
     async def process_audio_captures(self):
             async for message in self.audio_capture_generator():
-                self.aggregate_samples(message)
+                self.append_samples(message)
+                self.detect_speech()
+                self.transcribe_speech()
 
     async def audio_capture_generator(self):
         while True:
             yield await self.audio_capture_queue.get()
 
-    def aggregate_samples(self, message: AudioCaptureMessage):
-        flat_buffer = np.frombuffer(message.samples, np.float32)
+    def append_samples(self, message: AudioCaptureMessage):
+        flat_buffer = np.frombuffer(buffer=message.samples, dtype=self.dtype)
         frames = flat_buffer.size // message.channels
         shaped_buffer = flat_buffer.reshape(frames, message.channels)
-        if self.aggregated_samples_buffer is None:
-            self.aggregated_samples_buffer = shaped_buffer.copy()
-        else:
-            if self.aggregated_samples_buffer.shape[1] != shaped_buffer.shape[1]:
-                LOGGER.warning(
-                    "Channel mismatch on existing aggregated sample buffer and received sample buffer:"
-                    "existing %d vs incoming %d. Dropping previously aggregated samples.",
-                    self.aggregated_samples_buffer.shape[1], shaped_buffer.shape[1]
-                )
-                self.aggregated_samples_buffer = shaped_buffer.copy()
-            else:
-                self.aggregated_samples_buffer = np.concatenate(
-                    (self.aggregated_samples_buffer, shaped_buffer),
-                    axis=0
-                )
+        mono_buffer = shaped_buffer.mean(axis=1, dtype=self.dtype)
+        resampled_buffer = resampy.resample(x=mono_buffer, sr_orig=message.sample_rate, sr_new=self.sample_rate)
+        self.samples = np.concatenate((self.samples, resampled_buffer))
+        if self.samples.size > self.max_samples:
+            self.samples = self.samples[-self.max_samples:]
+
+    def detect_speech(self):
+        tensor = torch.from_numpy(self.samples)
+        timestamps = silero_vad.get_speech_timestamps(
+            audio=tensor,
+            model=self.silero_model,
+            min_speech_duration_ms=1000,
+            min_silence_duration_ms=1000,
+            return_seconds=True
+        )
+
+        if timestamps:
+            LOGGER.debug('Detected speech at timestamps: %s', timestamps)
+            for timestamp in timestamps:
+                self.timestamps.append(timestamp['start'])
+                self.timestamps.append(timestamp['end'])
+
+    def transcribe_speech(self):
+        if len(self.timestamps) == 0:
+            return
+
+        segments, info = self.whisper_model.transcribe(
+            audio=self.samples,
+            language='en',
+            clip_timestamps=self.timestamps,
+        )
+
+        if segments:
+            LOGGER.info('Transcribed text: %s', ''.join(s.text for s in segments))
+            self.samples = np.empty(shape=0, dtype=self.dtype)
+            self.timestamps.clear()
 
 
 async def main():
@@ -94,6 +132,7 @@ async def main():
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level), format=LOG_FORMAT)
+    logging.getLogger('faster_whisper').setLevel(logging.WARNING)
 
     service = SpeechRecognitionService(
         host=args.rmq_host,
