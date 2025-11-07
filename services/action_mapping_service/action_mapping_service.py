@@ -9,13 +9,13 @@ from cgt_ai_core.service import Service
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
 from cgt_ai_core.service_runner import run_service
 
-from messages import FooMessage, BarMessage
+import messages as m
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-class TestConsumer(Service):
+class ActionMappingService(Service):
     def __init__(self,
                  host: str = None,
                  port: int = None,
@@ -33,28 +33,23 @@ class TestConsumer(Service):
                 exchange_name='action_mappings',
                 routing_key=self.routing_key,
                 exchange_type=ExchangeType.direct,
-                on_consumer_ready_callback=self.on_foo_consumer_ready,
-                on_message_callback=self.on_foo_message
+                on_message_callback=self.on_receive_action_mapping
             )
         )
 
-    def on_foo_consumer_ready(self, consumer: RmqConsumer):
-        self.foo_consumer = consumer
-
     @staticmethod
-    def on_foo_message(consumer: RmqConsumer, message: FooMessage):
-        LOGGER.info('Received foo message on queue "%s" through routing key "%s" from exchange "%s": %s',
-                    consumer.queue_name, consumer.routing_key, consumer.exchange_name, message)
+    def on_receive_action_mapping(_, message: m.ActionMapping):
+        print(type(message))
 
 async def main():
-    parser = get_service_arg_parser(description='Test Consumer')
+    parser = get_service_arg_parser(description='Action Mapping Service')
     parser.add_argument_group('Subscription Arguments')
     parser.add_argument('-r', '--routing-key', default='action_mapping_service',
                         help='Routing key to subscribe to messages with')
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level), format=LOG_FORMAT)
-    service = TestConsumer(
+    service = ActionMappingService(
         routing_key=args.routing_key,
         host=args.rmq_host,
         port=args.rmq_port,

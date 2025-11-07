@@ -1,15 +1,8 @@
-import datetime
-import msgspec
-import uuid
+from typing import Literal
 
+Actor = Literal["Actor.driver", "Actor.gunner"]
+Action = str
+Phrase = str
 
-class FooMessage(msgspec.Struct):
-    id: uuid.UUID
-    datetime: datetime.datetime
-    data: str = "foo"
-
-
-class BarMessage(msgspec.Struct):
-    id: uuid.UUID
-    datetime: datetime.datetime
-    data: str = "bar"
+ActionPhraseMap = dict[Action, list[Phrase]]
+ActionMapping = dict[Actor, ActionPhraseMap]

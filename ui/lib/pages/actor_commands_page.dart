@@ -1,9 +1,10 @@
 import 'package:app/cubits/action_mapping_cubit.dart';
+import 'package:app/data/actor_commands.dart';
 import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class ActionMappingPage extends StatelessWidget {
-  const ActionMappingPage({super.key});
+class ActorCommandsPage extends StatelessWidget {
+  const ActorCommandsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -12,18 +13,25 @@ class ActionMappingPage extends StatelessWidget {
     final selectedColor = theme.colorScheme.primary.withOpacity(0.15);
     final textColor = theme.colorScheme.onSurface;
 
-    return BlocBuilder<ActionMappingCubit, ActionMappingState>(
+    return BlocBuilder<ActorCommandsCubit, ActorCommandsState>(
       builder: (context, state) {
-        final selectedAction = state.selectedAction;
         final selectedActor = state.selectedActor;
+        final selectedAction = state.selectedAction;
 
         Iterable<Action> actions = [];
-        List<Phrase> phrases = [];
+        List<String> phrases = [];
+        String reply = "";
 
-        if (selectedAction != null && selectedActor != null) {
-          final actorActionMappings = state.mappings[selectedActor]!;
-          actions = actorActionMappings.keys;
-          phrases = actorActionMappings[selectedAction]!;
+        if (selectedActor != null && selectedAction != null) {
+          final actorCommands = state.config.commands.firstWhere(
+            (a) => a.actor == selectedActor,
+          );
+          final command = actorCommands.commands.firstWhere(
+            (c) => c.action == selectedAction,
+          );
+          actions = actorCommands.commands.map((c) => c.action);
+          phrases = command.phrases;
+          reply = command.reply;
         }
 
         return Padding(
@@ -46,6 +54,7 @@ class ActionMappingPage extends StatelessWidget {
                 flex: 2,
                 child: RightPanel(
                   phrases: phrases,
+                  reply: reply,
                   selectedActor: selectedActor,
                   selectedAction: selectedAction,
                   background: background,
@@ -88,38 +97,36 @@ class ActionsList extends StatelessWidget {
       ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(8),
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: actions.map((action) {
-              final selected = action == selectedAction;
-              return InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () =>
-                    context.read<ActionMappingCubit>().selectAction(action),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: selected ? selectedColor : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    action,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: selected ? theme.colorScheme.primary : textColor,
-                      fontWeight: selected
-                          ? FontWeight.w500
-                          : FontWeight.normal,
-                    ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: actions.map((action) {
+            final selected = action == selectedAction;
+            return InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () =>
+                  context.read<ActorCommandsCubit>().selectAction(action),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: selected ? selectedColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  action.name
+                      .split('_')
+                      .map((word) => word[0].toUpperCase() + word.substring(1))
+                      .join(' '),
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: selected ? theme.colorScheme.primary : textColor,
+                    fontWeight: selected ? FontWeight.w500 : FontWeight.normal,
                   ),
                 ),
-              );
-            }).toList(),
-          ),
+              ),
+            );
+          }).toList(),
         ),
       ),
     );
@@ -127,7 +134,8 @@ class ActionsList extends StatelessWidget {
 }
 
 class RightPanel extends StatelessWidget {
-  final List<Phrase> phrases;
+  final List<String> phrases;
+  final String reply;
   final Actor? selectedActor;
   final Action? selectedAction;
   final Color background;
@@ -136,6 +144,7 @@ class RightPanel extends StatelessWidget {
   const RightPanel({
     super.key,
     required this.phrases,
+    required this.reply,
     required this.selectedActor,
     required this.selectedAction,
     required this.background,
@@ -146,7 +155,13 @@ class RightPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        ResponseInput(background: background, selectedColor: selectedColor),
+        ResponseInput(
+          reply: reply,
+          selectedActor: selectedActor,
+          selectedAction: selectedAction,
+          background: background,
+          selectedColor: selectedColor,
+        ),
         Expanded(
           child: PhrasesList(
             phrases: phrases,
@@ -162,18 +177,24 @@ class RightPanel extends StatelessWidget {
 }
 
 class ResponseInput extends StatelessWidget {
+  final String reply;
+  final Actor? selectedActor;
+  final Action? selectedAction;
   final Color background;
   final Color selectedColor;
 
   const ResponseInput({
     super.key,
+    required this.reply,
+    required this.selectedActor,
+    required this.selectedAction,
     required this.background,
     required this.selectedColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final controller = TextEditingController(text: "New Response");
+    final controller = TextEditingController(text: reply);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -196,6 +217,9 @@ class ResponseInput extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: TextField(
                   controller: controller,
+                  onSubmitted: (value) => context
+                      .read<ActorCommandsCubit>()
+                      .updateReply(selectedActor!, selectedAction!, value),
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     hintText: "Response",
@@ -211,7 +235,7 @@ class ResponseInput extends StatelessWidget {
 }
 
 class PhrasesList extends StatelessWidget {
-  final List<Phrase> phrases;
+  final List<String> phrases;
   final Actor? selectedActor;
   final Action? selectedAction;
   final Color background;
@@ -239,60 +263,56 @@ class PhrasesList extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(8),
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: List.generate(phrases.length, (i) {
-                    final controller = TextEditingController(text: phrases[i]);
-                    return Container(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      decoration: BoxDecoration(
-                        color: selectedColor.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.format_quote_rounded, size: 16),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                ),
-                                child: TextField(
-                                  controller: controller,
-                                  onSubmitted: (value) => context
-                                      .read<ActionMappingCubit>()
-                                      .updatePhrase(
-                                        selectedActor!,
-                                        selectedAction!,
-                                        i,
-                                        value,
-                                      ),
-                                  decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                  ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: List.generate(phrases.length, (i) {
+                  final controller = TextEditingController(text: phrases[i]);
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    decoration: BoxDecoration(
+                      color: selectedColor.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.format_quote_rounded, size: 16),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              child: TextField(
+                                controller: controller,
+                                onSubmitted: (value) => context
+                                    .read<ActorCommandsCubit>()
+                                    .updatePhrase(
+                                      selectedActor!,
+                                      selectedAction!,
+                                      i,
+                                      value,
+                                    ),
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
                                 ),
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.close_rounded, size: 20),
-                              onPressed: () => context
-                                  .read<ActionMappingCubit>()
-                                  .removePhrase(
-                                    selectedActor!,
-                                    selectedAction!,
-                                    i,
-                                  ),
-                            ),
-                          ],
-                        ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 20),
+                            onPressed: () =>
+                                context.read<ActorCommandsCubit>().removePhrase(
+                                  selectedActor!,
+                                  selectedAction!,
+                                  i,
+                                ),
+                          ),
+                        ],
                       ),
-                    );
-                  }),
-                ),
+                    ),
+                  );
+                }),
               ),
             ),
           ),
@@ -304,7 +324,7 @@ class PhrasesList extends StatelessWidget {
                 FilledButton.icon(
                   icon: const Icon(Icons.add),
                   label: const Text("Add Phrase"),
-                  onPressed: () => context.read<ActionMappingCubit>().addPhrase(
+                  onPressed: () => context.read<ActorCommandsCubit>().addPhrase(
                     selectedActor!,
                     selectedAction!,
                     "New phrase",

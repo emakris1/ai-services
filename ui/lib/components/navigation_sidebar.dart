@@ -1,4 +1,5 @@
 import 'package:app/cubits/action_mapping_cubit.dart';
+import 'package:app/data/actor_commands.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -7,7 +8,7 @@ class NavigationSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ActionMappingCubit, ActionMappingState>(
+    return BlocBuilder<ActorCommandsCubit, ActorCommandsState>(
       builder: (context, state) {
         return ListView(
           padding: EdgeInsets.zero,
@@ -61,7 +62,7 @@ class NavigationTile extends StatelessWidget {
       title: Text(title),
       onTap: () {
         Navigator.pop(context);
-        context.read<ActionMappingCubit>().selectActor(actor);
+        context.read<ActorCommandsCubit>().selectActor(actor);
       },
     );
   }
