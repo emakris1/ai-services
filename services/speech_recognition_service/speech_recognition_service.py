@@ -6,6 +6,7 @@ import silero_vad
 import torch
 
 from faster_whisper import WhisperModel
+from faster_whisper.transcribe import Segment, TranscriptionInfo
 
 from pika.exchange_type import ExchangeType
 
@@ -39,6 +40,9 @@ class SpeechRecognitionService(Service):
         self.samples: np.ndarray = np.empty(shape=0, dtype=self.dtype)
 
         self.timestamps: list[float] = []
+
+        self.transcription_segments: list[Segment] | None = None
+        self.transcription_info: TranscriptionInfo | None = None
 
         self.audio_capture_consumer: RmqConsumer | None = None
         self.add_consumer(
@@ -80,6 +84,8 @@ class SpeechRecognitionService(Service):
                 self.append_samples(message)
                 self.detect_speech()
                 self.transcribe_speech()
+                self.publish_speech()
+                self.reset()
 
     async def audio_capture_generator(self):
         while True:
@@ -96,8 +102,11 @@ class SpeechRecognitionService(Service):
             self.samples = self.samples[-self.max_samples:]
 
     def detect_speech(self):
+        if self.samples.size == 0:
+            return
+
         tensor = torch.from_numpy(self.samples)
-        timestamps = silero_vad.get_speech_timestamps(
+        timestamp_dicts = silero_vad.get_speech_timestamps(
             audio=tensor,
             model=self.silero_model,
             min_speech_duration_ms=1000,
@@ -105,33 +114,44 @@ class SpeechRecognitionService(Service):
             return_seconds=True
         )
 
-        if timestamps:
-            LOGGER.debug('Detected speech at timestamps: %s', timestamps)
-            for timestamp in timestamps:
-                self.timestamps.append(timestamp['start'])
-                self.timestamps.append(timestamp['end'])
+        if timestamp_dicts:
+            LOGGER.debug('Detected speech at times: %s', timestamp_dicts)
+            for timestamp_dict in timestamp_dicts:
+                self.timestamps.append(timestamp_dict['start'])
+                self.timestamps.append(timestamp_dict['end'])
 
     def transcribe_speech(self):
-        if len(self.timestamps) == 0:
+        if not self.timestamps:
             return
 
         segment_generator, transcription_info = self.whisper_model.transcribe(
             audio=self.samples,
             clip_timestamps=self.timestamps,
         )
-        segments = [segment for segment in segment_generator]
+        self.transcription_info = transcription_info
+        # iterating the generator triggers the transcription
+        self.transcription_segments = [segment for segment in segment_generator]
 
-        if segments:
-            self.samples = np.empty(shape=0, dtype=self.dtype)
-            self.timestamps.clear()
+    def publish_speech(self):
+        if not self.transcription_segments or not self.transcription_info:
+            return
 
-            message = SpeechRecognitionMessage(
-                language=transcription_info.language,
-                language_probability=transcription_info.language_probability,
-                text=' '.join(s.text.lstrip() for s in segments)) # strip whisper's leading spaces
+        message = SpeechRecognitionMessage(
+            language=self.transcription_info.language,
+            language_probability=self.transcription_info.language_probability,
+            text=' '.join(s.text.lstrip() for s in self.transcription_segments)) # strip whisper's leading spaces
 
-            LOGGER.info('Publishing speech recognition message:\n\t%s', message)
-            self.speech_recognition_producer.publish_message(message)
+        LOGGER.info('Publishing speech recognition message:\n\t%s', message)
+        self.speech_recognition_producer.publish_message(message)
+
+    def reset(self):
+        if not self.transcription_segments or not self.transcription_info:
+            return
+
+        self.samples = np.empty(shape=0, dtype=self.dtype)
+        self.timestamps.clear()
+        self.transcription_segments = None
+        self.transcription_info = None
 
 
 async def main():
