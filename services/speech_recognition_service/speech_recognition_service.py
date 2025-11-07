@@ -111,6 +111,7 @@ class SpeechRecognitionService(Service):
             model=self.silero_model,
             min_speech_duration_ms=1000,
             min_silence_duration_ms=1000,
+            speech_pad_ms=500,
             return_seconds=True
         )
 
