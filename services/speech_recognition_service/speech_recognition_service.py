@@ -10,7 +10,7 @@ from faster_whisper import WhisperModel
 from pika.exchange_type import ExchangeType
 
 from cgt_ai_core.log_config import LOG_FORMAT
-from cgt_ai_core.messages import AudioCaptureMessage
+from cgt_ai_core.messages import AudioCaptureMessage, SpeechRecognitionMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.service import Service
@@ -115,16 +115,23 @@ class SpeechRecognitionService(Service):
         if len(self.timestamps) == 0:
             return
 
-        segments, info = self.whisper_model.transcribe(
+        segment_generator, transcription_info = self.whisper_model.transcribe(
             audio=self.samples,
-            language='en',
             clip_timestamps=self.timestamps,
         )
+        segments = [segment for segment in segment_generator]
 
         if segments:
-            LOGGER.info('Transcribed text: %s', ''.join(s.text for s in segments))
             self.samples = np.empty(shape=0, dtype=self.dtype)
             self.timestamps.clear()
+
+            message = SpeechRecognitionMessage(
+                language=transcription_info.language,
+                language_probability=transcription_info.language_probability,
+                text=' '.join(s.text.lstrip() for s in segments)) # strip whisper's leading spaces
+
+            LOGGER.info('Publishing speech recognition message:\n\t%s', message)
+            self.speech_recognition_producer.publish_message(message)
 
 
 async def main():
