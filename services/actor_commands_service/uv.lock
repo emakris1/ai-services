@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.13"
 
 [[package]]
-name = "cgt-ai-action-mapping-service"
+name = "cgt-ai-actor-commands-service"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

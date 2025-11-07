@@ -15,7 +15,7 @@ import messages as m
 LOGGER = logging.getLogger(__name__)
 
 
-class ActionMappingService(Service):
+class ActorCommandsService(Service):
     def __init__(self,
                  host: str = None,
                  port: int = None,
@@ -30,7 +30,7 @@ class ActionMappingService(Service):
         self.add_consumer(
             RmqConsumer(
                 connection_params=self.connection_params,
-                exchange_name='action_mappings',
+                exchange_name='actor_commands',
                 routing_key=self.routing_key,
                 exchange_type=ExchangeType.direct,
                 on_message_callback=self.on_receive_action_mapping
@@ -42,14 +42,14 @@ class ActionMappingService(Service):
         print(type(message))
 
 async def main():
-    parser = get_service_arg_parser(description='Action Mapping Service')
+    parser = get_service_arg_parser(description='Actor Commands Service')
     parser.add_argument_group('Subscription Arguments')
-    parser.add_argument('-r', '--routing-key', default='action_mapping_service',
+    parser.add_argument('-r', '--routing-key', default='actor_commands_service',
                         help='Routing key to subscribe to messages with')
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level), format=LOG_FORMAT)
-    service = ActionMappingService(
+    service = ActorCommandsService(
         routing_key=args.routing_key,
         host=args.rmq_host,
         port=args.rmq_port,

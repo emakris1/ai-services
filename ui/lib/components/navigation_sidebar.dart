@@ -1,4 +1,4 @@
-import 'package:app/cubits/action_mapping_cubit.dart';
+import 'package:app/cubits/actor_commands_cubit.dart';
 import 'package:app/data/actor_commands.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

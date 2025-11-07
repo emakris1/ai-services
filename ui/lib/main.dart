@@ -1,5 +1,5 @@
 import 'package:app/components/navigation_sidebar.dart';
-import 'package:app/cubits/action_mapping_cubit.dart';
+import 'package:app/cubits/actor_commands_cubit.dart';
 import 'package:app/data/actor_commands.dart';
 import 'package:app/pages/actor_commands_page.dart';
 import 'package:app/theme/themes.dart';
