@@ -10,6 +10,7 @@ from cgt_ai_core.service_arg_parser import get_service_arg_parser
 from cgt_ai_core.service_runner import run_service
 
 import messages as m
+import command_embedder as ce
 
 
 LOGGER = logging.getLogger(__name__)
@@ -26,20 +27,23 @@ class ActorCommandsService(Service):
 
         self.routing_key = routing_key
 
-        self.foo_consumer = None
         self.add_consumer(
             RmqConsumer(
                 connection_params=self.connection_params,
                 exchange_name='actor_commands',
                 routing_key=self.routing_key,
                 exchange_type=ExchangeType.direct,
-                on_message_callback=self.on_receive_action_mapping
+                on_message_callback=self.on_receive_command_config
             )
         )
 
-    @staticmethod
-    def on_receive_action_mapping(_, message: m.ActionMapping):
-        print(type(message))
+        self.embedder = ce.CommandEmbedder()
+
+    def on_receive_command_config(self, _, message: m.CommandConfig):
+        config = m.dict_to_command_config(message)
+        self.embedder.update_config(config)
+        action, score = self.embedder.match_phrase_to_action("Fire!", m.Actor.GUNNER)
+        print(action, score)
 
 async def main():
     parser = get_service_arg_parser(description='Actor Commands Service')
