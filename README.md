@@ -7,17 +7,12 @@ A collection of AI services and service infrastructure designed for use with the
 - [Erlang OTP v28.1.1](https://github.com/erlang/otp/releases/download/OTP-28.1.1/otp_win64_28.1.1.exe)
 - [RabbitMQ Server v4.1.4](https://github.com/rabbitmq/rabbitmq-server/releases/download/v4.1.4/rabbitmq-server-4.1.4.exe)
 - [espeak-ng v1.52](https://github.com/espeak-ng/espeak-ng/releases/download/1.51/espeak-ng-X64.msi)
-- [NVIDIA CUDA Toolkit 13 Update 2](https://developer.download.nvidia.com/compute/cuda/13.0.2/network_installers/cuda_13.0.2_windows_network.exe)
+- [NVIDIA CUDA Toolkit 12 Update 1](https://developer.download.nvidia.com/compute/cuda/12.9.1/network_installers/cuda_12.9.1_windows_network.exe)
+- [NVIDIA cuDNN 9.15.0](https://developer.download.nvidia.com/compute/cudnn/9.15.0/local_installers/cudnn_9.15.0_windows.exe)
 
 ## Setup
 1. Install all prerequisites
-2. Generate virtual environments and download dependencies with uv:
-   ```
-   cd <path-to-project>\core
-   uv sync
-   cd <path-to-project>\services\test_services
-   uv sync
-   ```
+2. Run `services\uv-sync-services.ps1` to generate virtual environments and download dependencies with uv
 
 ## Modifying Core
 Since the **cgt-ai-core** library package is not an editable dependency, any source changes you make will not be
@@ -25,9 +20,10 @@ reflected in dependent service applications until the package is reinstalled.
 
 The simplest way to fix this is to force uv to reinstall packages in the given service project:
 ```
-cd <path-to-project>\services\<service>
+cd services\<service>
 uv sync --reinstall
 ```
+Alternatively, you can re-run `uv-sync-services.ps1`, which does this for all services.
 
 ## Running Services
 Open a shell and start the test producer:

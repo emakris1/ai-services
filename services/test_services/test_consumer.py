@@ -9,7 +9,7 @@ from cgt_ai_core.service import Service
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
 from cgt_ai_core.service_runner import run_service
 
-from messages import FooMessage, BarMessage
+from test_messages import FooMessage, BarMessage
 
 
 LOGGER = logging.getLogger(__name__)
@@ -24,12 +24,13 @@ class TestConsumer(Service):
                  routing_key: str = ''):
         super().__init__(host, port, username, password)
 
-        self.routing_key = routing_key
+        self.routing_key: str = routing_key
 
-        self.foo_consumer = None
-        self.bar_consumer = None
+        self.foo_consumer: RmqConsumer | None = None
+        self.bar_consumer: RmqConsumer | None = None
         self.add_consumer(
             RmqConsumer(
+                message_type=FooMessage,
                 connection_params=self.connection_params,
                 exchange_name='foo',
                 routing_key=self.routing_key,
@@ -40,6 +41,7 @@ class TestConsumer(Service):
         )
         self.add_consumer(
             RmqConsumer(
+                message_type=BarMessage,
                 connection_params=self.connection_params,
                 exchange_name='bar',
                 routing_key=self.routing_key,
