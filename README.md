@@ -12,13 +12,7 @@ A collection of AI services and service infrastructure designed for use with the
 
 ## Setup
 1. Install all prerequisites
-2. Generate virtual environments and download dependencies with uv:
-   ```
-   cd <path-to-project>\core
-   uv sync
-   cd <path-to-project>\services\test_services
-   uv sync
-   ```
+2. Run `services\uv-sync-services.ps1` to generate virtual environments and download dependencies with uv
 
 ## Modifying Core
 Since the **cgt-ai-core** library package is not an editable dependency, any source changes you make will not be
@@ -26,9 +20,10 @@ reflected in dependent service applications until the package is reinstalled.
 
 The simplest way to fix this is to force uv to reinstall packages in the given service project:
 ```
-cd <path-to-project>\services\<service>
+cd services\<service>
 uv sync --reinstall
 ```
+Alternatively, you can re-run `uv-sync-services.ps1`, which does this for all services.
 
 ## Running Services
 Open a shell and start the test producer:
