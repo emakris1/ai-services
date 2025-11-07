@@ -22,7 +22,7 @@ class ActorCommandsRepo {
 
   Map<String, dynamic> toDomain(CommandConfig config) {
     return {
-      'lastModified': config.lastModified.toIso8601String(),
+      'last_modified': config.lastModified.toIso8601String(),
       'commands': config.commands.map((actorCmds) {
         return {
           'actor': actorCmds.actor.name,
@@ -40,7 +40,7 @@ class ActorCommandsRepo {
 
   CommandConfig fromDomain(Map<String, dynamic> data) {
     return CommandConfig(
-      lastModified: DateTime.parse(data['lastModified'] as String),
+      lastModified: DateTime.parse(data['last_modified'] as String),
       commands: (data['commands'] as List)
           .map(
             (actorCmds) => ActorCommands(
@@ -71,7 +71,7 @@ class ActorCommandsRepo {
 
   Future<void> save(CommandConfig config) async {
     final data = toDomain(config);
-    data['lastModified'] = DateTime.now().toIso8601String();
+    data['last_modified'] = DateTime.now().toIso8601String();
     await _saveJson(data);
   }
 }
