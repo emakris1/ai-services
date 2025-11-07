@@ -1,7 +1,7 @@
 [project]
 name = "cgt-ai-audio-capture-service"
 version = "0.1.0"
-description = "Captures raw microphone audio, organizes audio chunks into a defined message structure with relevant metadata, and sends them to the speech recognition service"
+description = "Captures raw microphone audio samples, packages the samples into a defined message structure with sampling metadata, and publishes those messages to a message queue"
 requires-python = ">=3.13"
 dependencies = [
     "cgt-ai-core",

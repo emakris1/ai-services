@@ -1,6 +1,6 @@
 import asyncio
 import logging
-import numpy
+import numpy as np
 import sounddevice as sd
 
 from typing import Any
@@ -8,12 +8,11 @@ from typing import Any
 from pika.exchange_type import ExchangeType
 
 from cgt_ai_core.log_config import LOG_FORMAT
+from cgt_ai_core.messages import AudioCaptureMessage
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.service import Service
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
 from cgt_ai_core.service_runner import run_service
-
-from messages import AudioCaptureMessage
 
 
 LOGGER = logging.getLogger(__name__)
@@ -51,7 +50,7 @@ class AudioCaptureService(Service):
         if sample_rate is not None:
             self.sample_rate: int = sample_rate
         else:
-            default_sample_rate = self.device['default_samplerate']
+            default_sample_rate = int(self.device['default_samplerate'])
             LOGGER.info(
                 'No sample rate provided. Sampling at audio device default of %d Hz.',
                 default_sample_rate
@@ -65,7 +64,7 @@ class AudioCaptureService(Service):
             raise exc
 
         LOGGER.info(
-            'Sampling %d channels at a rate of %d Hz from audio device {index: %d, name: %s}',
+            'Sampling %d channels at a rate of %d Hz from audio device {index: %d, name: %s}.',
             self.channels,
             self.sample_rate,
             self.device_index,
@@ -84,27 +83,26 @@ class AudioCaptureService(Service):
 
     def on_audio_capture_producer_ready(self, producer: RmqProducer):
         self.audio_capture_producer = producer
-        asyncio.create_task(self.start_publishing())
+        asyncio.create_task(self.sample_input_stream())
 
-    async def start_publishing(self):
+    async def sample_input_stream(self):
         async for input_stream_data in self.input_stream_generator():
             message = AudioCaptureMessage(
                 channels=self.channels,
                 sample_rate=self.sample_rate,
                 samples=input_stream_data.tobytes()
             )
-            LOGGER.info('Publishing audio capture message with %d samples', input_stream_data.size)
+            LOGGER.info('Publishing audio capture message with %d samples.', input_stream_data.size)
             self.audio_capture_producer.publish_message(message)
 
     async def input_stream_generator(self):
         """Generator that yields blocks of input data as NumPy arrays."""
-        q_in: asyncio.Queue[numpy.ndarray] = asyncio.Queue()
+        q_in: asyncio.Queue[np.ndarray] = asyncio.Queue()
         loop = asyncio.get_running_loop()
 
-        def callback(indata: numpy.ndarray, frames: int, _unused_time: Any, _unused_status: sd.CallbackFlags):
+        def callback(indata: np.ndarray, frames: int, _unused_time: Any, _unused_status: sd.CallbackFlags):
             LOGGER.debug('Received %d frames of input stream data.', frames)
             try:
-                #q_in.put_nowait(indata.copy())
                 loop.call_soon_threadsafe(q_in.put_nowait, indata.copy())
             except asyncio.QueueFull as exc:
                 LOGGER.exception('Input stream queue is full. Discarding input stream data.', exc_info=exc)
@@ -115,7 +113,7 @@ class AudioCaptureService(Service):
             device=self.device_index,
             channels=self.channels,
             samplerate=self.sample_rate,
-            dtype=numpy.float32,
+            dtype=np.float32,
             callback=callback
         )
         with input_stream:
