@@ -1,0 +1,49 @@
+{
+  "last_modified": "2025-11-07T09:44:40.622732",
+  "commands": [
+    {
+      "actor": "driver",
+      "commands": [
+        {
+          "action": "drive",
+          "reply": "Driving!",
+          "phrases": ["Move forward", "Go ahead", "Drive forward", "Get moving"]
+        },
+        {
+          "action": "halt",
+          "reply": "Stopping!",
+          "phrases": ["Stop", "Hold up", "Slow down", "Brake", "Pull over"]
+        }
+      ]
+    },
+    {
+      "actor": "gunner",
+      "commands": [
+        {
+          "action": "fire",
+          "reply": "Firing!",
+          "phrases": [
+            "Shoot",
+            "Fire!",
+            "Open fire",
+            "Engage target",
+            "Take the shot",
+            "Light 'em up",
+            "Let 'em have it"
+          ]
+        },
+        {
+          "action": "cease_fire",
+          "reply": "Ceasing fire!",
+          "phrases": [
+            "Cease fire",
+            "Hold your fire",
+            "Stop shooting",
+            "Stand down",
+            "Cease engagement"
+          ]
+        }
+      ]
+    }
+  ]
+}

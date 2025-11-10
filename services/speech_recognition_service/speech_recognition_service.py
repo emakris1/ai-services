@@ -10,7 +10,7 @@ from faster_whisper import WhisperModel
 from pika.exchange_type import ExchangeType
 
 from cgt_ai_core.log_config import LOG_FORMAT
-from cgt_ai_core.messages import AudioCaptureMessage
+from cgt_ai_core.messages import AudioCaptureMessage, SpeechRecognitionMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.service import Service
@@ -57,7 +57,7 @@ class SpeechRecognitionService(Service):
             RmqProducer(
                 connection_params=self.connection_params,
                 exchange_name='speech_recognition',
-                exchange_type=ExchangeType.direct,
+                exchange_type=ExchangeType.fanout,
                 on_producer_ready_callback=self.on_speech_recognition_producer_ready
             )
         )
@@ -122,7 +122,11 @@ class SpeechRecognitionService(Service):
         )
 
         if segments:
-            LOGGER.info('Transcribed text: %s', ''.join(s.text for s in segments))
+            speech = ''.join(s.text for s in segments)
+            self.speech_recognition_producer.publish_message(SpeechRecognitionMessage(
+                speech=speech
+            ))
+            LOGGER.info('Transcribed text: %s', speech)
             self.samples = np.empty(shape=0, dtype=self.dtype)
             self.timestamps.clear()
 
