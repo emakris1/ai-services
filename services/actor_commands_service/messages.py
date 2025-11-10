@@ -43,3 +43,8 @@ def dict_to_command_config(data: dict) -> CommandConfig:
             for actor_data in data["commands"]
         ],
     )
+
+class ActionRecognitionMessage(msgspec.Struct):
+    score: float
+    actor: Actor
+    action: Action

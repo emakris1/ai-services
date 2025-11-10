@@ -63,7 +63,7 @@ class CommandEmbedder:
             top_sim = sorted(similarities, reverse=True)[:top_k]
             score = np.mean(top_sim)
 
-            action_scores.append((action, score))
+            action_scores.append((action, score.item()))
 
         best_action = max(action_scores, key=lambda x: x[1])
         return best_action

@@ -5,6 +5,7 @@ description = "Converts spoken phrases to embeddings, maps those embeddings to p
 requires-python = ">=3.13"
 dependencies = [
     "cgt-ai-core",
+    "sentence-transformers>=5.1.2",
 ]
 
 [tool.uv.sources]
