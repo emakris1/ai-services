@@ -70,7 +70,7 @@ class SpeechRecognitionService(Service):
 
         self.silero_iterator = silero_vad.VADIterator(
             model=silero_vad.load_silero_vad(),
-            min_silence_duration_ms=1000,
+            min_silence_duration_ms=250,
             speech_pad_ms=500,
         )
 
