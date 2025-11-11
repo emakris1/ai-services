@@ -36,11 +36,13 @@ class SpeechRecognitionService(Service):
 
         self.dtype: np.dtype[np.float32] = np.float32
         self.sample_rate: int = 16000 # most ASR libraries expect 16kHz so we always resample to this rate
-        self.max_samples: int = self.sample_rate * 10 # only keep the most recent 10s of samples
+        self.max_samples: int = self.sample_rate * 30 # only keep the most recent 30s of samples
+        self.sample_window_size: int = 512
+
         self.samples: np.ndarray = np.empty(shape=0, dtype=self.dtype)
-
-        self.timestamps: list[float] = []
-
+        self.samples_processed: int = 0
+        self.detection_start_time: float | None = None
+        self.detection_end_time: float | None = None
         self.transcription_segments: list[Segment] | None = None
         self.transcription_info: TranscriptionInfo | None = None
 
@@ -66,8 +68,13 @@ class SpeechRecognitionService(Service):
             )
         )
 
+        self.silero_iterator = silero_vad.VADIterator(
+            model=silero_vad.load_silero_vad(),
+            min_silence_duration_ms=1000,
+            speech_pad_ms=500,
+        )
+
         self.whisper_model = WhisperModel(model_size_or_path='turbo', device='cuda')
-        self.silero_model = silero_vad.load_silero_vad()
 
     def on_audio_capture_consumer_ready(self, consumer: RmqConsumer):
         self.audio_capture_consumer = consumer
@@ -98,36 +105,39 @@ class SpeechRecognitionService(Service):
         mono_buffer = shaped_buffer.mean(axis=1, dtype=self.dtype)
         resampled_buffer = resampy.resample(x=mono_buffer, sr_orig=message.sample_rate, sr_new=self.sample_rate)
         self.samples = np.concatenate((self.samples, resampled_buffer))
-        if self.samples.size > self.max_samples:
-            self.samples = self.samples[-self.max_samples:]
+        if self.detection_start_time is None and self.samples.size > self.max_samples:
+            LOGGER.info('Exceeded max sample size, forcing a reset.')
+            self.reset(force=True)
 
     def detect_speech(self):
-        if self.samples.size == 0:
-            return
+        first_index = self.samples_processed
+        last_index = self.samples_processed + self.sample_window_size
 
-        tensor = torch.from_numpy(self.samples)
-        timestamp_dicts = silero_vad.get_speech_timestamps(
-            audio=tensor,
-            model=self.silero_model,
-            min_speech_duration_ms=1000,
-            min_silence_duration_ms=1000,
-            speech_pad_ms=500,
-            return_seconds=True
-        )
+        while last_index <= self.samples.size:
+            chunk = self.samples[first_index:last_index]
+            chunk_tensor = torch.from_numpy(chunk)
+            detections = self.silero_iterator(chunk_tensor, return_seconds=True)
 
-        if timestamp_dicts:
-            LOGGER.debug('Detected speech at times: %s', timestamp_dicts)
-            for timestamp_dict in timestamp_dicts:
-                self.timestamps.append(timestamp_dict['start'])
-                self.timestamps.append(timestamp_dict['end'])
+            if detections:
+                if 'start' in detections:
+                    self.detection_end_time = None
+                    self.detection_start_time = detections['start']
+                    LOGGER.info('Started detecting speech at buffer time %.2fs.', self.detection_start_time)
+                if 'end' in detections:
+                    self.detection_end_time = detections['end']
+                    LOGGER.info('Stopped detecting speech at buffer time %.2fs.', self.detection_end_time)
+
+            self.samples_processed += self.sample_window_size
+            first_index = self.samples_processed
+            last_index = self.samples_processed + self.sample_window_size
 
     def transcribe_speech(self):
-        if not self.timestamps:
+        if self.detection_start_time is None or self.detection_end_time is None:
             return
 
         segment_generator, transcription_info = self.whisper_model.transcribe(
             audio=self.samples,
-            clip_timestamps=self.timestamps,
+            clip_timestamps=[self.detection_start_time, self.detection_end_time],
         )
         self.transcription_info = transcription_info
         # iterating the generator triggers the transcription
@@ -145,14 +155,17 @@ class SpeechRecognitionService(Service):
         LOGGER.info('Publishing speech recognition message:\n\t%s', message)
         self.speech_recognition_producer.publish_message(message)
 
-    def reset(self):
-        if not self.transcription_segments or not self.transcription_info:
+    def reset(self, force: bool = False):
+        if not force and (not self.transcription_segments or not self.transcription_info):
             return
 
         self.samples = np.empty(shape=0, dtype=self.dtype)
-        self.timestamps.clear()
+        self.samples_processed = 0
+        self.detection_start_time = None
+        self.detection_end_time = None
         self.transcription_segments = None
         self.transcription_info = None
+        self.silero_iterator.reset_states()
 
 
 async def main():
