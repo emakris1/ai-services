@@ -1,26 +1,37 @@
 {
-  "last_modified": "2025-11-07T09:44:40.622732",
+  "last_modified": "2025-11-11T14:48:25.731358",
   "commands": [
     {
-      "actor": "driver",
+      "actor": 0,
       "commands": [
         {
-          "action": "drive",
-          "reply": "Driving!",
-          "phrases": ["Move forward", "Go ahead", "Drive forward", "Get moving"]
+          "action": 0,
+          "reply": "Driving forward!",
+          "phrases": [
+            "Move forward",
+            "Go ahead",
+            "Drive forward",
+            "Get moving"
+          ]
         },
         {
-          "action": "halt",
+          "action": 1,
           "reply": "Stopping!",
-          "phrases": ["Stop", "Hold up", "Slow down", "Brake", "Pull over"]
+          "phrases": [
+            "Stop",
+            "Hold up",
+            "Slow down",
+            "Brake",
+            "Pull over"
+          ]
         }
       ]
     },
     {
-      "actor": "gunner",
+      "actor": 1,
       "commands": [
         {
-          "action": "fire",
+          "action": 2,
           "reply": "Firing!",
           "phrases": [
             "Shoot",
@@ -33,7 +44,7 @@
           ]
         },
         {
-          "action": "cease_fire",
+          "action": 3,
           "reply": "Ceasing fire!",
           "phrases": [
             "Cease fire",

@@ -25,10 +25,10 @@ class ActorCommandsRepo {
       'last_modified': config.lastModified.toIso8601String(),
       'commands': config.commands.map((actorCmds) {
         return {
-          'actor': actorCmds.actor.name,
+          'actor': actorCmds.actor.index,
           'commands': actorCmds.commands.map((cmd) {
             return {
-              'action': cmd.action.name,
+              'action': cmd.action.index,
               'reply': cmd.reply,
               'phrases': cmd.phrases,
             };
@@ -44,15 +44,11 @@ class ActorCommandsRepo {
       commands: (data['commands'] as List)
           .map(
             (actorCmds) => ActorCommands(
-              actor: Actor.values.firstWhere(
-                (a) => a.name == actorCmds['actor'],
-              ),
+              actor: Actor.values[actorCmds['actor'] as int],
               commands: (actorCmds['commands'] as List)
                   .map(
                     (cmd) => Command(
-                      action: Action.values.firstWhere(
-                        (a) => a.name == cmd['action'],
-                      ),
+                      action: Action.values[cmd['action'] as int],
                       reply: cmd['reply'],
                       phrases: List<String>.from(cmd['phrases']),
                     ),

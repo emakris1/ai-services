@@ -2,15 +2,15 @@ import msgspec
 import enum
 
 class Actor(enum.Enum):
-    DRIVER = 'driver'
-    GUNNER = 'gunner'
+    DRIVER = 0
+    GUNNER = 1
 
 class Action(enum.Enum):
-    DRIVE = 'drive'
-    HALT = 'halt'
-    FIRE = 'fire'
-    CEASE_FIRE = 'cease_fire'
-    UNKNOWN = 'unknown'
+    UNKNOWN = -1
+    DRIVE = 0
+    HALT = 1
+    FIRE = 2
+    CEASE_FIRE = 3
 
 class Command(msgspec.Struct):
     action: Action
