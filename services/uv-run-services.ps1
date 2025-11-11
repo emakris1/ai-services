@@ -9,11 +9,10 @@ $WtArgs = @()
 $ExcludedServices = @("test_services")
 
 # Get all directories, then filter out excluded ones
-$Services = Get-ChildItem -Path $PSScriptRoot -Directory | Where-Object { 
-    $ExcludedServices -notcontains $_.Name 
-}
+$Services = Get-ChildItem -Path $PSScriptRoot -Directory | Where-Object { $ExcludedServices -notcontains $_.Name }
 
-foreach ($Service in $Services) {
+foreach ($Service in $Services) 
+{
     $ServicePath = $Service.FullName
     Write-Host "Preparing tab for $($Service.Name)" -ForegroundColor Cyan
 
