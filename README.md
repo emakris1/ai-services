@@ -1,7 +1,9 @@
 # ACV-CGT-AI
+
 A collection of AI services and service infrastructure designed for use with the Crew Gunnery Trainer.
 
 ## Prerequisites
+
 - [Python v3.13.9](https://www.python.org/ftp/python/3.13.9/python-3.13.9-amd64.exe)
 - [uv v0.9.5](https://docs.astral.sh/uv/getting-started/installation/)
 - [Erlang OTP v28.1.1](https://github.com/erlang/otp/releases/download/OTP-28.1.1/otp_win64_28.1.1.exe)
@@ -11,28 +13,38 @@ A collection of AI services and service infrastructure designed for use with the
 - [NVIDIA cuDNN 9.15.0](https://developer.download.nvidia.com/compute/cudnn/9.15.0/local_installers/cudnn_9.15.0_windows.exe)
 
 ## Setup
+
 1. Install all prerequisites
 2. Run `services\uv-sync-services.ps1` to generate virtual environments and download dependencies with uv
 
 ## Modifying Core
+
 Since the **cgt-ai-core** library package is not an editable dependency, any source changes you make will not be
 reflected in dependent service applications until the package is reinstalled.
 
 The simplest way to fix this is to force uv to reinstall packages in the given service project:
+
 ```
 cd services\<service>
 uv sync --reinstall
 ```
+
 Alternatively, you can re-run `uv-sync-services.ps1`, which does this for all services.
 
 ## Running Services
+
 Open a shell and start the test producer:
+
 ```
 cd <path-to-project>\services\test_services
 uv run test_producer.py
 ```
+
 Open another shell and start the test consumer:
+
 ```
 cd <path-to-project>\services\test_services
 uv run test_consumer.py
 ```
+
+Alternatively, you can run `uv-run-services.ps1` to open a separate terminal that contains a tabs for each running service.
