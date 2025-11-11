@@ -3,14 +3,15 @@ if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
     exit 127
 }
 
-$wtArgs = @()
+$WtArgs = @()
 
 # List service folder names you want to skip
 $ExcludedServices = @("test_services")
 
 # Get all directories, then filter out excluded ones
-$Services = Get-ChildItem -Path $PSScriptRoot -Directory |
-Where-Object { $ExcludedServices -notcontains $_.Name }
+$Services = Get-ChildItem -Path $PSScriptRoot -Directory | Where-Object { 
+    $ExcludedServices -notcontains $_.Name 
+}
 
 foreach ($Service in $Services) {
     $ServicePath = $Service.FullName
@@ -26,7 +27,7 @@ foreach ($Service in $Services) {
         "uv run $($Service.Name).py;"
     )
 
-    $wtArgs += $TabArgs
+    $WtArgs += $TabArgs
 }
 
-Start-Process wt -ArgumentList $wtArgs
+Start-Process wt -ArgumentList $WtArgs
