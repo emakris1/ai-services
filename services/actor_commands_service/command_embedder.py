@@ -28,11 +28,11 @@ class CommandEmbedder:
 
         for i in range(len(phrases)):
             self._embedding_map[phrases[i]] = embeddings[i]
-                    
+
     def _embed_sentence(self, sentence: str, cache_embedding=False) -> Embedding:
         if sentence in self._embedding_map:
             return self._embedding_map[sentence]
-        
+
         embedding = self._model.encode(sentence)
 
         if cache_embedding:
@@ -80,6 +80,6 @@ class CommandEmbedder:
             for command in ac.commands:
                 if command.action not in self._table[ac.actor]:
                     self._table[ac.actor][command.action] = []
-                
+
                 for phrase in command.phrases:
                     self._table[ac.actor][command.action].append(self._embed_sentence(phrase)) 

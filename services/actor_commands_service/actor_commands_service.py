@@ -3,16 +3,16 @@ import logging
 
 from pika.exchange_type import ExchangeType
 
-from cgt_ai_core.messages import SpeechRecognitionMessage
 from cgt_ai_core.log_config import LOG_FORMAT
+from cgt_ai_core.messages import SpeechRecognitionMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.service import Service
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
 from cgt_ai_core.service_runner import run_service
 
-import messages as m
 import command_embedder as ce
+import messages as m
 
 
 LOGGER = logging.getLogger(__name__)
@@ -31,8 +31,8 @@ class ActorCommandsService(Service):
 
         self.routing_key = routing_key
         self.score_threshold = score_threshold
-        self.current_actor = m.Actor.GUNNER # get this from an exhange coming from unreal
-        
+        self.current_actor = m.Actor.GUNNER # TODO: get this from an exchange coming from unreal
+
         self.speech_recognition_consumer: RmqConsumer | None = None
         self.add_consumer(
             RmqConsumer(
@@ -99,7 +99,7 @@ class ActorCommandsService(Service):
                 score=score,
                 actor=self.current_actor,
                 action=action
-            ))        
+            ))
             LOGGER.info(f"Phrase \"{text}\",\tAction: {action},\tScore: {round(score, 2)}/1")
 
 async def main():
