@@ -35,7 +35,7 @@ class SpeechRecognitionService(Service):
         self.audio_capture_queue: asyncio.Queue[AudioCaptureMessage] = asyncio.Queue()
 
         self.dtype: np.dtype[np.float32] = np.float32
-        self.sample_rate: int = 16000 # most ASR libraries expect 16kHz so we always resample to this rate
+        self.sample_rate: int = 16000 # most ASR libraries expect 16kHz audio
         self.max_samples: int = self.sample_rate * 30 # only keep the most recent 30s of samples
         self.sample_window_size: int = 512
 
@@ -99,12 +99,31 @@ class SpeechRecognitionService(Service):
             yield await self.audio_capture_queue.get()
 
     def append_samples(self, message: AudioCaptureMessage):
+        # convert raw bytes to a numpy array
         flat_buffer = np.frombuffer(buffer=message.samples, dtype=self.dtype)
-        frames = flat_buffer.size // message.channels
-        shaped_buffer = flat_buffer.reshape(frames, message.channels)
-        mono_buffer = shaped_buffer.mean(axis=1, dtype=self.dtype)
-        resampled_buffer = resampy.resample(x=mono_buffer, sr_orig=message.sample_rate, sr_new=self.sample_rate)
+
+        # if the audio capture has multiple channels, we need to average down to one channel
+        # most ASR libraries including silero and whisper expect mono 16kHz audio
+        if message.channels > 1:
+            LOGGER.debug('Audio capture has %d channels, averaging down to mono.', message.channels)
+            # reshape the array to match the number of audio channels
+            frames = flat_buffer.size // message.channels
+            shaped_buffer = flat_buffer.reshape(frames, message.channels)
+            # average samples across channel axis
+            mono_buffer = shaped_buffer.mean(axis=1, dtype=self.dtype)
+        else:
+            mono_buffer = flat_buffer
+
+        # if the audio capture has a sample rate other than 16kHz, we need to resample to 16kHz
+        # most ASR libraries including silero and whisper expect mono 16kHz audio
+        if message.sample_rate != self.sample_rate:
+            LOGGER.debug('Audio capture has %d sample rate, resampling to 16kHz.', message.sample_rate)
+            resampled_buffer = resampy.resample(x=mono_buffer, sr_orig=message.sample_rate, sr_new=self.sample_rate)
+        else:
+            resampled_buffer = mono_buffer
+
         self.samples = np.concatenate((self.samples, resampled_buffer))
+
         if self.detection_start_time is None and self.samples.size > self.max_samples:
             LOGGER.info('Exceeded max sample size, forcing a reset.')
             self.reset(force=True)
