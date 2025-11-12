@@ -25,17 +25,11 @@ The simplest way to fix this is to force uv to reinstall packages in the given s
 cd services\<service>
 uv sync --reinstall
 ```
-Alternatively, you can re-run `uv-sync-services.ps1`, which does this for all services.
+Alternatively, you can re-run `services\uv-sync-services.ps1`, which does this for all services.
 
 ## Running Services
-Open a shell and start the test producer:
-```
-cd <path-to-project>\services\test_services
-uv run test_producer.py
-```
-Open another shell and start the test consumer:
-```
-cd <path-to-project>\services\test_services
-uv run test_consumer.py
-```
-Alternatively, you can run `uv-run-services.ps1` to open a separate terminal that contains a tabs for each running service.
+To run a service, open a terminal in the desired service directory and run `uv run <service>.py`.
+
+Each service has its own set of arguments, which can be viewed by running `uv run <service>.py --help`.
+
+Alternatively, you can run `uv-run-services.ps1` to open a new terminal window that will contain each service running in its own tab.
