@@ -36,3 +36,4 @@ Open another shell and start the test consumer:
 cd <path-to-project>\services\test_services
 uv run test_consumer.py
 ```
+Alternatively, you can run `uv-run-services.ps1` to open a separate terminal that contains a tabs for each running service.

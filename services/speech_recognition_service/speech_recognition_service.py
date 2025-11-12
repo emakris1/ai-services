@@ -64,6 +64,7 @@ class SpeechRecognitionService(Service):
                 connection_params=self.connection_params,
                 exchange_name='speech_recognition',
                 exchange_type=ExchangeType.direct,
+                routing_key='actor_commands_service',
                 on_producer_ready_callback=self.on_speech_recognition_producer_ready
             )
         )
