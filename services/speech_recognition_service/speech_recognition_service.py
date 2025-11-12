@@ -81,7 +81,7 @@ class SpeechRecognitionService(Service):
         self.audio_capture_consumer = consumer
 
     def on_audio_capture_message(self, _unused_consumer: RmqConsumer, message: AudioCaptureMessage):
-        self.event_loop.call_soon_threadsafe(self.audio_capture_queue.put_nowait, message)
+        self.audio_capture_queue.put_nowait(message)
 
     def on_speech_recognition_producer_ready(self, producer: RmqProducer):
         self.speech_recognition_producer = producer
