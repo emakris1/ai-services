@@ -86,6 +86,7 @@ class ActorCommandsService(Service):
 
     def on_action_recognition_producer_ready(self, producer: RmqProducer):
         self.action_recognition_producer = producer
+        asyncio.create_task(self.process_speech_recognition())
 
     async def process_speech_recognition(self):
         while True:
@@ -94,12 +95,14 @@ class ActorCommandsService(Service):
             self.on_action_matched(message.text, action, score)
 
     def on_action_matched(self, text, action, score):
-        if score > self.score_threshold and self.action_recognition_producer:
-            self.action_recognition_producer.publish_message(m.ActionRecognitionMessage(
-                score=score,
-                actor=self.current_actor,
-                action=action
-            ))
+        if score > self.score_threshold:
+            self.action_recognition_producer.publish_message(
+                m.ActionRecognitionMessage(
+                    score=score,
+                    actor=self.current_actor,
+                    action=action
+                )
+            )
             LOGGER.info(f"Phrase \"{text}\",\tAction: {action},\tScore: {round(score, 2)}/1")
 
 async def main():
@@ -117,7 +120,6 @@ async def main():
         username=args.rmq_username,
         password=args.rmq_password
     )
-    asyncio.create_task(service.process_speech_recognition())
     await run_service(service)
 
 if __name__ == '__main__':
