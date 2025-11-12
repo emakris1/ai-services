@@ -129,6 +129,9 @@ class SpeechRecognitionService(Service):
             self.reset(force=True)
 
     def detect_speech(self):
+        start_key = 'start'
+        end_key = 'end'
+
         first_index = self.samples_processed
         last_index = self.samples_processed + self.sample_window_size
 
@@ -138,12 +141,12 @@ class SpeechRecognitionService(Service):
             detections = self.silero_iterator(chunk_tensor, return_seconds=True)
 
             if detections:
-                if 'start' in detections:
+                if start_key in detections:
                     self.detection_end_time = None
-                    self.detection_start_time = detections['start']
+                    self.detection_start_time = detections[start_key]
                     LOGGER.info('Started detecting speech at buffer time %.2fs.', self.detection_start_time)
-                if 'end' in detections:
-                    self.detection_end_time = detections['end']
+                if end_key in detections:
+                    self.detection_end_time = detections[end_key]
                     LOGGER.info('Stopped detecting speech at buffer time %.2fs.', self.detection_end_time)
 
             self.samples_processed += self.sample_window_size
