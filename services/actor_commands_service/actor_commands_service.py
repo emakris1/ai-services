@@ -40,7 +40,7 @@ class ActorCommandsService(Service):
                 connection_params=self.connection_params,
                 exchange_name='speech_recognition',
                 routing_key=self.routing_key,
-                exchange_type=ExchangeType.fanout,
+                exchange_type=ExchangeType.direct,
                 on_consumer_ready_callback=self.on_speech_recognition_consumer_ready,
                 on_message_callback=self.on_receive_speech_recognition,
             )
@@ -90,17 +90,17 @@ class ActorCommandsService(Service):
     async def process_speech_recognition(self):
         while True:
             message = await self.speech_queue.get()
-            action, score = self.embedder.match_phrase_to_action(message.speech, self.current_actor)
-            self.on_action_matched(message.speech, action, score)
+            action, score = self.embedder.match_phrase_to_action(message.language, message.text, self.current_actor)
+            self.on_action_matched(message.text, action, score)
 
-    def on_action_matched(self, speech, action, score):
+    def on_action_matched(self, text, action, score):
         if score > self.score_threshold and self.action_recognition_producer:
             self.action_recognition_producer.publish_message(m.ActionRecognitionMessage(
                 score=score,
                 actor=self.current_actor,
                 action=action
             ))        
-            LOGGER.info(f"Phrase \"{speech}\",\tAction: {action},\tScore: {round(score, 2)}/1")
+            LOGGER.info(f"Phrase \"{text}\",\tAction: {action},\tScore: {round(score, 2)}/1")
 
 async def main():
     parser = get_service_arg_parser(description='Actor Commands Service')

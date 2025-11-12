@@ -40,10 +40,11 @@ class CommandEmbedder:
 
         return embedding
 
-    def match_phrase_to_action(self, phrase: str, actor: m.Actor) -> tuple[m.Action, float]:
-        if actor not in self._table:
+    def match_phrase_to_action(self, language: str, phrase: str, actor: m.Actor) -> tuple[m.Action, float]:
+        # TODO: add better support for multiple languages
+        if language != 'en' or actor not in self._table:
             return m.Action.UNKNOWN, 0.0
-        
+
         query_embedding = self._embed_sentence(phrase, cache_embedding=False)
 
         action_scores: list[tuple[m.Action, float]] = []

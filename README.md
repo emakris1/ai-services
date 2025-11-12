@@ -6,12 +6,14 @@ A collection of AI services and service infrastructure designed for use with the
 - [uv v0.9.5](https://docs.astral.sh/uv/getting-started/installation/)
 - [Erlang OTP v28.1.1](https://github.com/erlang/otp/releases/download/OTP-28.1.1/otp_win64_28.1.1.exe)
 - [RabbitMQ Server v4.1.4](https://github.com/rabbitmq/rabbitmq-server/releases/download/v4.1.4/rabbitmq-server-4.1.4.exe)
-- [espeak-ng v1.52](https://github.com/espeak-ng/espeak-ng/releases/download/1.51/espeak-ng-X64.msi)
 - [NVIDIA CUDA Toolkit 12 Update 1](https://developer.download.nvidia.com/compute/cuda/12.9.1/network_installers/cuda_12.9.1_windows_network.exe)
-- [NVIDIA cuDNN 9.15.0](https://developer.download.nvidia.com/compute/cudnn/9.15.0/local_installers/cudnn_9.15.0_windows.exe)
+- [NVIDIA cuDNN v9.15.0](https://developer.download.nvidia.com/compute/cudnn/9.15.0/local_installers/cudnn_9.15.0_windows.exe)
+- [Flutter v3.35.7](https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_3.35.7-stable.zip)
+- [espeak-ng v1.52](https://github.com/espeak-ng/espeak-ng/releases/download/1.51/espeak-ng-X64.msi)
 
 ## Setup
-1. Install all prerequisites
+1. Install all prerequisites 
+    1. Follow the [setup instructions](https://docs.flutter.dev/install/manual#install-flutter) for a manual Flutter installation
 2. Run `services\uv-sync-services.ps1` to generate virtual environments and download dependencies with uv
 
 ## Modifying Core

@@ -7,4 +7,6 @@ class AudioCaptureMessage(msgspec.Struct):
     samples: bytes
 
 class SpeechRecognitionMessage(msgspec.Struct):
-    speech: str
+    language: str
+    language_probability: float
+    text: str
