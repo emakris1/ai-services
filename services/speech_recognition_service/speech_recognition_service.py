@@ -160,7 +160,7 @@ class SpeechRecognitionService(Service):
 
         segment_generator, transcription_info = self.whisper_model.transcribe(
             audio=self.samples,
-            clip_timestamps=[self.detection_start_time, self.detection_end_time],
+            clip_timestamps=[self.detection_start_time, self.detection_end_time]
         )
         self.transcription_info = transcription_info
         # iterating the generator triggers the transcription
