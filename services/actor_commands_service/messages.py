@@ -1,9 +1,11 @@
 import msgspec
 import enum
 
+
 class Actor(enum.Enum):
     DRIVER = 0
     GUNNER = 1
+
 
 class Action(enum.Enum):
     UNKNOWN = -1
@@ -12,18 +14,22 @@ class Action(enum.Enum):
     FIRE = 2
     CEASE_FIRE = 3
 
+
 class Command(msgspec.Struct):
     action: Action
     reply: str
     phrases: list[str]
 
+
 class ActorCommands(msgspec.Struct):
     actor: Actor
     commands: list[Command]
 
+
 class CommandConfig(msgspec.Struct):
     last_modified: str
     commands: list[ActorCommands]
+
 
 def dict_to_command_config(data: dict) -> CommandConfig:
     return CommandConfig(
@@ -43,6 +49,7 @@ def dict_to_command_config(data: dict) -> CommandConfig:
             for actor_data in data["commands"]
         ],
     )
+
 
 class ActionRecognitionMessage(msgspec.Struct):
     score: float
