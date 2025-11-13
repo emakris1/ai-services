@@ -13,7 +13,7 @@ class CommandEmbedder:
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
         self._model = SentenceTransformer(model_name)
 
-    def _init_embedding_map(self, config: m.CommandConfig):
+    def _init_embedding_map(self, config: m.CommandConfigMessage):
         # This is used because it's a lot faster to forward pass all the sentences 
         # at once instead of doing it individually. Usually ran when the config is
         # first sent.
@@ -28,11 +28,11 @@ class CommandEmbedder:
 
         for i in range(len(phrases)):
             self._embedding_map[phrases[i]] = embeddings[i]
-                    
+
     def _embed_sentence(self, sentence: str, cache_embedding=False) -> Embedding:
         if sentence in self._embedding_map:
             return self._embedding_map[sentence]
-        
+
         embedding = self._model.encode(sentence)
 
         if cache_embedding:
@@ -69,7 +69,7 @@ class CommandEmbedder:
         best_action = max(action_scores, key=lambda x: x[1])
         return best_action
 
-    def update_config(self, config: m.CommandConfig):
+    def update_config(self, config: m.CommandConfigMessage):
         if not self._embedding_map:
             self._init_embedding_map(config)
 
@@ -80,6 +80,6 @@ class CommandEmbedder:
             for command in ac.commands:
                 if command.action not in self._table[ac.actor]:
                     self._table[ac.actor][command.action] = []
-                
+
                 for phrase in command.phrases:
                     self._table[ac.actor][command.action].append(self._embed_sentence(phrase)) 

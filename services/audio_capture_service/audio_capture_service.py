@@ -10,15 +10,14 @@ from pika.exchange_type import ExchangeType
 from cgt_ai_core.log_config import LOG_FORMAT
 from cgt_ai_core.messages import AudioCaptureMessage
 from cgt_ai_core.rmq_producer import RmqProducer
-from cgt_ai_core.service import Service
+from cgt_ai_core.rmq_service import RmqService
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
-from cgt_ai_core.service_runner import run_service
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-class AudioCaptureService(Service):
+class AudioCaptureService(RmqService):
     def __init__(self,
                  host: str = None,
                  port: int = None,
@@ -156,7 +155,7 @@ async def main():
         channels=args.channels,
         sample_rate=args.sample_rate
     )
-    await run_service(service)
+    await service.run()
 
 if __name__ == '__main__':
     asyncio.run(main())

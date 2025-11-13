@@ -14,15 +14,14 @@ from cgt_ai_core.log_config import LOG_FORMAT
 from cgt_ai_core.messages import AudioCaptureMessage, SpeechRecognitionMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
-from cgt_ai_core.service import Service
+from cgt_ai_core.rmq_service import RmqService
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
-from cgt_ai_core.service_runner import run_service
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-class SpeechRecognitionService(Service):
+class SpeechRecognitionService(RmqService):
     def __init__(self,
                  host: str = None,
                  port: int = None,
@@ -81,7 +80,7 @@ class SpeechRecognitionService(Service):
         self.audio_capture_consumer = consumer
 
     def on_audio_capture_message(self, _unused_consumer: RmqConsumer, message: AudioCaptureMessage):
-        self.event_loop.call_soon_threadsafe(self.audio_capture_queue.put_nowait, message)
+        self.audio_capture_queue.put_nowait(message)
 
     def on_speech_recognition_producer_ready(self, producer: RmqProducer):
         self.speech_recognition_producer = producer
@@ -160,7 +159,7 @@ class SpeechRecognitionService(Service):
 
         segment_generator, transcription_info = self.whisper_model.transcribe(
             audio=self.samples,
-            clip_timestamps=[self.detection_start_time, self.detection_end_time],
+            clip_timestamps=[self.detection_start_time, self.detection_end_time]
         )
         self.transcription_info = transcription_info
         # iterating the generator triggers the transcription
@@ -204,7 +203,7 @@ async def main():
         username=args.rmq_username,
         password=args.rmq_password,
     )
-    await run_service(service)
+    await service.run()
 
 if __name__ == '__main__':
     asyncio.run(main())

@@ -3,22 +3,21 @@ import logging
 
 from pika.exchange_type import ExchangeType
 
-from cgt_ai_core.messages import SpeechRecognitionMessage
 from cgt_ai_core.log_config import LOG_FORMAT
+from cgt_ai_core.messages import SpeechRecognitionMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
-from cgt_ai_core.service import Service
+from cgt_ai_core.rmq_service import RmqService
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
-from cgt_ai_core.service_runner import run_service
 
-import messages as m
 import command_embedder as ce
+import messages as m
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-class ActorCommandsService(Service):
+class ActorCommandsService(RmqService):
     def __init__(self,
                  host: str = None,
                  port: int = None,
@@ -31,8 +30,8 @@ class ActorCommandsService(Service):
 
         self.routing_key = routing_key
         self.score_threshold = score_threshold
-        self.current_actor = m.Actor.GUNNER # get this from an exhange coming from unreal
-        
+        self.current_actor = m.Actor.GUNNER # TODO: get this from an exchange coming from unreal
+
         self.speech_recognition_consumer: RmqConsumer | None = None
         self.add_consumer(
             RmqConsumer(
@@ -49,7 +48,7 @@ class ActorCommandsService(Service):
         self.command_config_consumer: RmqConsumer | None = None
         self.add_consumer(
             RmqConsumer(
-                message_type=m.CommandConfig,
+                message_type=m.CommandConfigMessage,
                 connection_params=self.connection_params,
                 exchange_name='actor_commands',
                 routing_key=self.routing_key,
@@ -81,11 +80,13 @@ class ActorCommandsService(Service):
     def on_command_config_consumer_ready(self, consumer: RmqConsumer):
         self.command_config_consumer = consumer
 
-    def on_receive_command_config(self, _, message: m.CommandConfig):
+    def on_receive_command_config(self, _, message: m.CommandConfigMessage):
         self.embedder.update_config(message)
+        self.clear_speech_queue()
 
     def on_action_recognition_producer_ready(self, producer: RmqProducer):
         self.action_recognition_producer = producer
+        asyncio.create_task(self.process_speech_recognition())
 
     async def process_speech_recognition(self):
         while True:
@@ -94,13 +95,24 @@ class ActorCommandsService(Service):
             self.on_action_matched(message.text, action, score)
 
     def on_action_matched(self, text, action, score):
-        if score > self.score_threshold and self.action_recognition_producer:
-            self.action_recognition_producer.publish_message(m.ActionRecognitionMessage(
-                score=score,
-                actor=self.current_actor,
-                action=action
-            ))        
+        if score > self.score_threshold:
+            self.action_recognition_producer.publish_message(
+                m.ActionRecognitionMessage(
+                    score=score,
+                    actor=self.current_actor,
+                    action=action
+                )
+            )
             LOGGER.info(f"Phrase \"{text}\",\tAction: {action},\tScore: {round(score, 2)}/1")
+
+    def clear_speech_queue(self):
+        queue_empty = False
+        while not queue_empty:
+            try:
+                self.speech_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                queue_empty = True
+
 
 async def main():
     parser = get_service_arg_parser(description='Actor Commands Service')
@@ -117,8 +129,7 @@ async def main():
         username=args.rmq_username,
         password=args.rmq_password
     )
-    asyncio.create_task(service.process_speech_recognition())
-    await run_service(service)
+    await service.run()
 
 if __name__ == '__main__':
     asyncio.run(main())

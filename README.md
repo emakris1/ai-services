@@ -14,7 +14,12 @@ A collection of AI services and service infrastructure designed for use with the
 ## Setup
 1. Install all prerequisites 
     1. Follow the [setup instructions](https://docs.flutter.dev/install/manual#install-flutter) for a manual Flutter installation
-2. Run `services\uv-sync-services.ps1` to generate virtual environments and download dependencies with uv
+2. If you have not previously run PowerShell scripts in your environment before,
+   run the following command in an admin-elevated PowerShell terminal to enable PowerShell script execution:
+   ```
+   Set-ExecutionPolicy RemoteSigned
+   ```
+3. Run `services\uv-sync-services.ps1` to generate virtual environments and download dependencies with **uv**
 
 ## Modifying Core
 Since the **cgt-ai-core** library package is not an editable dependency, any source changes you make will not be
