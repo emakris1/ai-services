@@ -26,7 +26,7 @@ class ActorCommands(msgspec.Struct):
     commands: list[Command]
 
 
-class CommandConfig(msgspec.Struct):
+class CommandConfigMessage(msgspec.Struct):
     last_modified: str
     commands: list[ActorCommands]
 

@@ -49,7 +49,7 @@ class ActorCommandsService(Service):
         self.command_config_consumer: RmqConsumer | None = None
         self.add_consumer(
             RmqConsumer(
-                message_type=m.CommandConfig,
+                message_type=m.CommandConfigMessage,
                 connection_params=self.connection_params,
                 exchange_name='actor_commands',
                 routing_key=self.routing_key,
@@ -81,7 +81,7 @@ class ActorCommandsService(Service):
     def on_command_config_consumer_ready(self, consumer: RmqConsumer):
         self.command_config_consumer = consumer
 
-    def on_receive_command_config(self, _, message: m.CommandConfig):
+    def on_receive_command_config(self, _, message: m.CommandConfigMessage):
         self.embedder.update_config(message)
         self.clear_speech_queue()
 
