@@ -14,14 +14,14 @@ from cgt_ai_core.log_config import LOG_FORMAT
 from cgt_ai_core.messages import AudioCaptureMessage, SpeechRecognitionMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
-from cgt_ai_core.service import Service
+from cgt_ai_core.rmq_service import RmqService
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-class SpeechRecognitionService(Service):
+class SpeechRecognitionService(RmqService):
     def __init__(self,
                  host: str = None,
                  port: int = None,

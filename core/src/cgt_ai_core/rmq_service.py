@@ -12,7 +12,7 @@ from cgt_ai_core.rmq_producer import RmqProducer
 LOGGER = logging.getLogger(__name__)
 
 
-class Service:
+class RmqService:
     def __init__(self,
                  host: str = None,
                  port: int = None,

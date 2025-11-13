@@ -7,7 +7,7 @@ from cgt_ai_core.log_config import LOG_FORMAT
 from cgt_ai_core.messages import SpeechRecognitionMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
-from cgt_ai_core.service import Service
+from cgt_ai_core.rmq_service import RmqService
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
 
 import command_embedder as ce
@@ -17,7 +17,7 @@ import messages as m
 LOGGER = logging.getLogger(__name__)
 
 
-class ActorCommandsService(Service):
+class ActorCommandsService(RmqService):
     def __init__(self,
                  host: str = None,
                  port: int = None,
