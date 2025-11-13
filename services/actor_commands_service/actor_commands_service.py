@@ -24,15 +24,14 @@ class ActorCommandsService(RmqService):
                  username: str = None,
                  password: str = None,
                  routing_key: str = '',
-                 score_threshold: float = 0.40,
+                 score_threshold: float = 0.70,
                  ):
         super().__init__(host, port, username, password)
 
         self.routing_key = routing_key
         self.score_threshold = score_threshold
-        self.current_actor = m.Actor.GUNNER # TODO: get this from an exchange coming from unreal
+        self.current_ai_actor = m.Actor.DRIVER
 
-        self.speech_recognition_consumer: RmqConsumer | None = None
         self.add_consumer(
             RmqConsumer(
                 message_type=SpeechRecognitionMessage,
@@ -40,12 +39,10 @@ class ActorCommandsService(RmqService):
                 exchange_name='speech_recognition',
                 routing_key=self.routing_key,
                 exchange_type=ExchangeType.direct,
-                on_consumer_ready_callback=self.on_speech_recognition_consumer_ready,
                 on_message_callback=self.on_receive_speech_recognition,
             )
         )
 
-        self.command_config_consumer: RmqConsumer | None = None
         self.add_consumer(
             RmqConsumer(
                 message_type=m.CommandConfigMessage,
@@ -53,8 +50,18 @@ class ActorCommandsService(RmqService):
                 exchange_name='actor_commands',
                 routing_key=self.routing_key,
                 exchange_type=ExchangeType.direct,
-                on_consumer_ready_callback=self.on_command_config_consumer_ready,
                 on_message_callback=self.on_receive_command_config
+            )
+        )
+
+        self.add_consumer(
+            RmqConsumer(
+                message_type=m.CurrentActorMessage,
+                connection_params=self.connection_params,
+                exchange_name='current_actor',
+                routing_key=self.routing_key,
+                exchange_type=ExchangeType.direct,
+                on_message_callback=self.on_receive_current_actor
             )
         )
 
@@ -64,6 +71,7 @@ class ActorCommandsService(RmqService):
                 connection_params=self.connection_params,
                 exchange_name='action_recognition',
                 exchange_type=ExchangeType.direct,
+                routing_key='crew_member_service',
                 on_producer_ready_callback=self.on_action_recognition_producer_ready
             )
         )
@@ -71,18 +79,19 @@ class ActorCommandsService(RmqService):
         self.embedder = ce.CommandEmbedder()
         self.speech_queue: asyncio.Queue[SpeechRecognitionMessage] = asyncio.Queue()
 
-    def on_speech_recognition_consumer_ready(self, consumer: RmqConsumer):
-        self.speech_recognition_consumer = consumer
-
     def on_receive_speech_recognition(self, _, message: SpeechRecognitionMessage):
         self.speech_queue.put_nowait(message)
-
-    def on_command_config_consumer_ready(self, consumer: RmqConsumer):
-        self.command_config_consumer = consumer
 
     def on_receive_command_config(self, _, message: m.CommandConfigMessage):
         self.embedder.update_config(message)
         self.clear_speech_queue()
+
+    def on_receive_current_actor(self, _, message: m.CurrentActorMessage):
+        if message.actor == m.Actor.DRIVER:
+            self.current_ai_actor = m.Actor.GUNNER
+        elif message.actor == m.Actor.GUNNER:
+            self.current_ai_actor = m.Actor.DRIVER
+        LOGGER.info(f"AI now controls {self.current_ai_actor}")
 
     def on_action_recognition_producer_ready(self, producer: RmqProducer):
         self.action_recognition_producer = producer
@@ -91,7 +100,7 @@ class ActorCommandsService(RmqService):
     async def process_speech_recognition(self):
         while True:
             message = await self.speech_queue.get()
-            action, score = self.embedder.match_phrase_to_action(message.language, message.text, self.current_actor)
+            action, score = self.embedder.match_phrase_to_action(message.language, message.text, self.current_ai_actor)
             self.on_action_matched(message.text, action, score)
 
     def on_action_matched(self, text, action, score):
@@ -99,11 +108,11 @@ class ActorCommandsService(RmqService):
             self.action_recognition_producer.publish_message(
                 m.ActionRecognitionMessage(
                     score=score,
-                    actor=self.current_actor,
+                    actor=self.current_ai_actor,
                     action=action
                 )
             )
-            LOGGER.info(f"Phrase \"{text}\",\tAction: {action},\tScore: {round(score, 2)}/1")
+        LOGGER.info(f"Phrase \"{text}\",\tAction: {action},\tScore: {round(score, 2)}/1")
 
     def clear_speech_queue(self):
         queue_empty = False

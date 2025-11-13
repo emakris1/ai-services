@@ -35,3 +35,6 @@ class ActionRecognitionMessage(msgspec.Struct):
     score: float
     actor: Actor
     action: Action
+
+class CurrentActorMessage(msgspec.Struct):
+    actor: Actor
