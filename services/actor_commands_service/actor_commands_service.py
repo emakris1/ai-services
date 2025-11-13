@@ -83,6 +83,7 @@ class ActorCommandsService(Service):
 
     def on_receive_command_config(self, _, message: m.CommandConfig):
         self.embedder.update_config(message)
+        self.clear_speech_queue()
 
     def on_action_recognition_producer_ready(self, producer: RmqProducer):
         self.action_recognition_producer = producer
@@ -104,6 +105,15 @@ class ActorCommandsService(Service):
                 )
             )
             LOGGER.info(f"Phrase \"{text}\",\tAction: {action},\tScore: {round(score, 2)}/1")
+
+    def clear_speech_queue(self):
+        queue_empty = False
+        while not queue_empty:
+            try:
+                self.speech_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                queue_empty = True
+
 
 async def main():
     parser = get_service_arg_parser(description='Actor Commands Service')
