@@ -1,16 +1,22 @@
 import messages as m
 from sentence_transformers import SentenceTransformer
 import numpy as np
+import logging
 
 Embedding = np.ndarray # 1 dimensional vector
 ActionEmbeddings = dict[m.Action, np.ndarray[Embedding]]
 EmbeddingTable = dict[m.Actor, ActionEmbeddings]
 
+
+LOGGER = logging.getLogger(__name__)
+logging.getLogger("sentence_transformers").setLevel(logging.ERROR) # mute sentence transformers
+
+
 class CommandEmbedder:
     _embedding_map: dict[str, Embedding] = {}
     _table: EmbeddingTable = {}
 
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+    def __init__(self, model_name: str = "google/embeddinggemma-300m"):
         self._model = SentenceTransformer(model_name)
 
     def _init_embedding_map(self, config: m.CommandConfigMessage):
@@ -28,6 +34,8 @@ class CommandEmbedder:
 
         for i in range(len(phrases)):
             self._embedding_map[phrases[i]] = embeddings[i]
+
+        LOGGER.info(f"Generated {len(phrases)} config embeddings.")
 
     def _embed_sentence(self, sentence: str, cache_embedding=False) -> Embedding:
         if sentence in self._embedding_map:
