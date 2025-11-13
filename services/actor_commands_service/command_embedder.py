@@ -16,8 +16,8 @@ class CommandEmbedder:
     _embedding_map: dict[str, Embedding] = {}
     _table: EmbeddingTable = {}
 
-    def __init__(self, model_name: str = "google/embeddinggemma-300m"):
-        self._model = SentenceTransformer(model_name)
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+            self._model = SentenceTransformer(model_name)
 
     def _init_embedding_map(self, config: m.CommandConfigMessage):
         # This is used because it's a lot faster to forward pass all the sentences 
