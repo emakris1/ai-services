@@ -31,26 +31,6 @@ class CommandConfig(msgspec.Struct):
     commands: list[ActorCommands]
 
 
-def dict_to_command_config(data: dict) -> CommandConfig:
-    return CommandConfig(
-        last_modified=data["last_modified"],
-        commands=[
-            ActorCommands(
-                actor=Actor(actor_data["actor"]),
-                commands=[
-                    Command(
-                        action=Action(cmd_data["action"]),
-                        reply=cmd_data["reply"],
-                        phrases=cmd_data["phrases"],
-                    )
-                    for cmd_data in actor_data["commands"]
-                ],
-            )
-            for actor_data in data["commands"]
-        ],
-    )
-
-
 class ActionRecognitionMessage(msgspec.Struct):
     score: float
     actor: Actor
