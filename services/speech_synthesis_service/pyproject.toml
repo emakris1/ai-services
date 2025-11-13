@@ -1,0 +1,28 @@
+[project]
+name = "cgt-ai-speech-recognition-service"
+version = "0.1.0"
+description = "Consumes text from messages, synthesizes speech for that text, and publishes messages containing that speech to a message queue"
+requires-python = ">=3.13"
+dependencies = [
+    "cgt-ai-core",
+]
+
+[tool.uv]
+override-dependencies = [
+    "torch==2.9.0+cu129",
+    "torchvision==0.24.0+cu129",
+]
+
+[tool.uv.sources]
+cgt-ai-core = { path = "../../core" }
+torch = [
+    { index = "pytorch-cu129"},
+]
+torchvision = [
+    { index = "pytorch-cu129"},
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu129"
+url = "https://download.pytorch.org/whl/cu129"
+explicit = true
