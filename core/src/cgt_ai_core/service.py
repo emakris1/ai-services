@@ -59,8 +59,6 @@ class Service:
             LOGGER.exception('Run cancelled.', exc_info=exc)
         except Exception as exc:
             LOGGER.exception('Unhandled exception.', exc_info=exc)
-        finally:
-            await self.stop()
 
     async def stop(self):
         LOGGER.info('Stopping...')

@@ -9,7 +9,6 @@ from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.service import Service
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
-from cgt_ai_core.service_runner import run_service
 
 import command_embedder as ce
 import messages as m
@@ -130,7 +129,7 @@ async def main():
         username=args.rmq_username,
         password=args.rmq_password
     )
-    await run_service(service)
+    await service.run()
 
 if __name__ == '__main__':
     asyncio.run(main())
