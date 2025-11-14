@@ -7,26 +7,22 @@ class ActorCommandsState {
   final CommandConfig config;
   final Actor? selectedActor;
   final Action? selectedAction;
-  final String? selectedPhrase;
 
   ActorCommandsState({
     required this.config,
     this.selectedActor,
     this.selectedAction,
-    this.selectedPhrase,
   });
 
   ActorCommandsState copyWith({
     CommandConfig? config,
     Actor? selectedActor,
     Action? selectedAction,
-    String? selectedPhrase,
   }) {
     return ActorCommandsState(
       config: config ?? this.config,
       selectedActor: selectedActor ?? this.selectedActor,
       selectedAction: selectedAction ?? this.selectedAction,
-      selectedPhrase: selectedPhrase ?? this.selectedPhrase,
     );
   }
 }
@@ -46,7 +42,6 @@ class ActorCommandsCubit extends Cubit<ActorCommandsState> {
           config: CommandConfig(lastModified: DateTime.now(), commands: []),
           selectedActor: null,
           selectedAction: null,
-          selectedPhrase: null,
         ),
       ) {
     _init();
@@ -62,16 +57,12 @@ class ActorCommandsCubit extends Cubit<ActorCommandsState> {
         firstActor != null && config.commands.first.commands.isNotEmpty
         ? config.commands.first.commands.first.action
         : null;
-    final firstPhrase = firstActor != null && firstAction != null
-        ? config.commands.first.commands.first.phrases.firstOrNull
-        : null;
 
     emit(
       ActorCommandsState(
         config: config,
         selectedActor: firstActor,
         selectedAction: firstAction,
-        selectedPhrase: firstPhrase,
       ),
     );
   }
@@ -84,55 +75,23 @@ class ActorCommandsCubit extends Cubit<ActorCommandsState> {
   void selectActor(Actor actor) {
     final actorCmd = state.config.commands.firstWhere((a) => a.actor == actor);
     final firstAction = actorCmd.commands.first.action;
-    final firstPhrase = actorCmd.commands.first.phrases.firstOrNull;
-    emit(
-      state.copyWith(
-        selectedActor: actor,
-        selectedAction: firstAction,
-        selectedPhrase: firstPhrase,
-      ),
-    );
+    emit(state.copyWith(selectedActor: actor, selectedAction: firstAction));
   }
 
   void selectAction(Action action) {
-    emit(state.copyWith(selectedAction: action, selectedPhrase: null));
-  }
-
-  void selectPhrase(String phrase) {
-    emit(state.copyWith(selectedPhrase: phrase));
-  }
-
-  void addPhrase(Actor actor, Action action, String newPhrase) {
-    final updatedConfig = _modifyCommand(actor, action, (cmd) {
-      cmd.phrases = [...cmd.phrases, newPhrase];
-    });
-    _update(updatedConfig);
-  }
-
-  void updatePhrase(Actor actor, Action action, int index, String newPhrase) {
-    final updatedConfig = _modifyCommand(actor, action, (cmd) {
-      if (index >= 0 && index < cmd.phrases.length) {
-        final newPhrases = List<String>.from(cmd.phrases);
-        newPhrases[index] = newPhrase;
-        cmd.phrases = newPhrases;
-      }
-    });
-    _update(updatedConfig);
-  }
-
-  void removePhrase(Actor actor, Action action, int index) {
-    final updatedConfig = _modifyCommand(actor, action, (cmd) {
-      if (index >= 0 && index < cmd.phrases.length) {
-        final newPhrases = List<String>.from(cmd.phrases)..removeAt(index);
-        cmd.phrases = newPhrases;
-      }
-    });
-    _update(updatedConfig);
+    emit(state.copyWith(selectedAction: action));
   }
 
   void updateReply(Actor actor, Action action, String newReply) {
     final updatedConfig = _modifyCommand(actor, action, (cmd) {
       cmd.reply = newReply;
+    });
+    _update(updatedConfig);
+  }
+
+  void updateLabel(Actor actor, Action action, String newLabel) {
+    final updatedConfig = _modifyCommand(actor, action, (cmd) {
+      cmd.label = newLabel;
     });
     _update(updatedConfig);
   }
@@ -149,7 +108,7 @@ class ActorCommandsCubit extends Cubit<ActorCommandsState> {
             final updatedCmd = Command(
               action: cmd.action,
               reply: cmd.reply,
-              phrases: List<String>.from(cmd.phrases),
+              label: cmd.label,
             );
             modify(updatedCmd);
             return updatedCmd;

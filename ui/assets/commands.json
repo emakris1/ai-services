@@ -1,5 +1,5 @@
 {
-  "last_modified": "2025-11-11T14:48:25.731358",
+  "last_modified": "2025-11-14T12:58:57.367841",
   "commands": [
     {
       "actor": 0,
@@ -7,23 +7,12 @@
         {
           "action": 0,
           "reply": "Driving forward!",
-          "phrases": [
-            "Move forward",
-            "Go ahead",
-            "Drive forward",
-            "Get moving"
-          ]
+          "label": "move forward"
         },
         {
           "action": 1,
           "reply": "Stopping!",
-          "phrases": [
-            "Stop",
-            "Hold up",
-            "Slow down",
-            "Brake",
-            "Pull over"
-          ]
+          "label": "stop moving"
         }
       ]
     },
@@ -33,26 +22,12 @@
         {
           "action": 2,
           "reply": "Firing!",
-          "phrases": [
-            "Shoot",
-            "Fire!",
-            "Open fire",
-            "Engage target",
-            "Take the shot",
-            "Light 'em up",
-            "Let 'em have it"
-          ]
+          "label": "start firing"
         },
         {
           "action": 3,
           "reply": "Ceasing fire!",
-          "phrases": [
-            "Cease fire",
-            "Hold your fire",
-            "Stop shooting",
-            "Stand down",
-            "Cease engagement"
-          ]
+          "label": "stop firing"
         }
       ]
     }

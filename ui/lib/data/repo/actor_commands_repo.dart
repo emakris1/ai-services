@@ -30,7 +30,7 @@ class ActorCommandsRepo {
             return {
               'action': cmd.action.index,
               'reply': cmd.reply,
-              'phrases': cmd.phrases,
+              'label': cmd.label,
             };
           }).toList(),
         };
@@ -50,7 +50,7 @@ class ActorCommandsRepo {
                     (cmd) => Command(
                       action: Action.values[cmd['action'] as int],
                       reply: cmd['reply'],
-                      phrases: List<String>.from(cmd['phrases']),
+                      label: cmd['label'],
                     ),
                   )
                   .toList(),

@@ -19,8 +19,8 @@ class ActorCommandsPage extends StatelessWidget {
         final selectedAction = state.selectedAction;
 
         Iterable<Action> actions = [];
-        List<String> phrases = [];
         String reply = "";
+        String label = "";
 
         if (selectedActor != null && selectedAction != null) {
           final actorCommands = state.config.commands.firstWhere(
@@ -30,7 +30,7 @@ class ActorCommandsPage extends StatelessWidget {
             (c) => c.action == selectedAction,
           );
           actions = actorCommands.commands.map((c) => c.action);
-          phrases = command.phrases;
+          label = command.label;
           reply = command.reply;
         }
 
@@ -53,7 +53,7 @@ class ActorCommandsPage extends StatelessWidget {
               Expanded(
                 flex: 2,
                 child: RightPanel(
-                  phrases: phrases,
+                  label: label,
                   reply: reply,
                   selectedActor: selectedActor,
                   selectedAction: selectedAction,
@@ -134,7 +134,7 @@ class ActionsList extends StatelessWidget {
 }
 
 class RightPanel extends StatelessWidget {
-  final List<String> phrases;
+  final String label;
   final String reply;
   final Actor? selectedActor;
   final Action? selectedAction;
@@ -143,7 +143,7 @@ class RightPanel extends StatelessWidget {
 
   const RightPanel({
     super.key,
-    required this.phrases,
+    required this.label,
     required this.reply,
     required this.selectedActor,
     required this.selectedAction,
@@ -155,21 +155,19 @@ class RightPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        LabelInput(
+          label: label,
+          actor: selectedActor,
+          action: selectedAction,
+          background: background,
+          selectedColor: selectedColor,
+        ),
         ResponseInput(
           reply: reply,
           selectedActor: selectedActor,
           selectedAction: selectedAction,
           background: background,
           selectedColor: selectedColor,
-        ),
-        Expanded(
-          child: PhrasesList(
-            phrases: phrases,
-            selectedActor: selectedActor,
-            selectedAction: selectedAction,
-            background: background,
-            selectedColor: selectedColor,
-          ),
         ),
       ],
     );
@@ -234,106 +232,59 @@ class ResponseInput extends StatelessWidget {
   }
 }
 
-class PhrasesList extends StatelessWidget {
-  final List<String> phrases;
-  final Actor? selectedActor;
-  final Action? selectedAction;
+class LabelInput extends StatelessWidget {
+  final String label;
+  final Actor? actor;
+  final Action? action;
   final Color background;
   final Color selectedColor;
 
-  const PhrasesList({
+  const LabelInput({
     super.key,
-    required this.phrases,
-    required this.selectedActor,
-    required this.selectedAction,
+    required this.label,
+    required this.actor,
+    required this.action,
     required this.background,
     required this.selectedColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final controller = TextEditingController(text: label);
+
     return Container(
-      height: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: List.generate(phrases.length, (i) {
-                  final controller = TextEditingController(text: phrases[i]);
-                  return Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    decoration: BoxDecoration(
-                      color: selectedColor.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.format_quote_rounded, size: 16),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              child: TextField(
-                                controller: controller,
-                                onSubmitted: (value) => context
-                                    .read<ActorCommandsCubit>()
-                                    .updatePhrase(
-                                      selectedActor!,
-                                      selectedAction!,
-                                      i,
-                                      value,
-                                    ),
-                                decoration: const InputDecoration(
-                                  border: InputBorder.none,
-                                ),
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close_rounded, size: 20),
-                            onPressed: () =>
-                                context.read<ActorCommandsCubit>().removePhrase(
-                                  selectedActor!,
-                                  selectedAction!,
-                                  i,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                FilledButton.icon(
-                  icon: const Icon(Icons.add),
-                  label: const Text("Add Phrase"),
-                  onPressed: () => context.read<ActorCommandsCubit>().addPhrase(
-                    selectedActor!,
-                    selectedAction!,
-                    "New phrase",
+      padding: const EdgeInsets.all(8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: selectedColor.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          children: [
+            const Icon(Icons.short_text_rounded, size: 18),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: TextField(
+                  controller: controller,
+                  onSubmitted: (value) => context
+                      .read<ActorCommandsCubit>()
+                      .updateLabel(actor!, action!, value),
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    hintText: "Label",
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

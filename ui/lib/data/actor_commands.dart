@@ -8,9 +8,9 @@ typedef Phrase = String;
 class Command {
   final Action action;
   Reply reply;
-  List<Phrase> phrases;
+  String label;
 
-  Command({required this.action, required this.reply, required this.phrases});
+  Command({required this.action, required this.reply, required this.label});
 }
 
 class ActorCommands {
