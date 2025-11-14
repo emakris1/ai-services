@@ -13,12 +13,16 @@ class Action(enum.Enum):
     HALT = 1
     FIRE = 2
     CEASE_FIRE = 3
+    target_twelve_o_clock = 4
+    target_three_o_clock = 5
+    target_six_o_clock = 6
+    target_nine_o_clock = 7
 
 
 class Command(msgspec.Struct):
     action: Action
     reply: str
-    phrases: list[str]
+    label: str
 
 
 class ActorCommands(msgspec.Struct):
@@ -35,6 +39,7 @@ class ActionRecognitionMessage(msgspec.Struct):
     score: float
     actor: Actor
     action: Action
+
 
 class CurrentActorMessage(msgspec.Struct):
     actor: Actor

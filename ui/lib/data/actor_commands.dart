@@ -1,6 +1,15 @@
 enum Actor { driver, gunner }
 
-enum Action { drive, halt, fire, cease_fire }
+enum Action {
+  drive,
+  halt,
+  fire,
+  cease_fire,
+  target_twelve_o_clock,
+  target_three_o_clock,
+  target_six_o_clock,
+  target_nine_o_clock,
+}
 
 typedef Reply = String;
 typedef Phrase = String;

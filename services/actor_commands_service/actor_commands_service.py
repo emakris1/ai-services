@@ -10,7 +10,7 @@ from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.rmq_service import RmqService
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
 
-import command_embedder as ce
+from action_cross_encoder import ActionCrossEncoder
 import messages as m
 
 
@@ -30,7 +30,7 @@ class ActorCommandsService(RmqService):
 
         self.routing_key = routing_key
         self.score_threshold = score_threshold
-        self.current_ai_actor = m.Actor.DRIVER
+        self.current_ai_actor = m.Actor.GUNNER
 
         self.add_consumer(
             RmqConsumer(
@@ -76,14 +76,16 @@ class ActorCommandsService(RmqService):
             )
         )
 
-        self.embedder = ce.CommandEmbedder()
+        self.ace = ActionCrossEncoder()
         self.speech_queue: asyncio.Queue[SpeechRecognitionMessage] = asyncio.Queue()
 
     def on_receive_speech_recognition(self, _, message: SpeechRecognitionMessage):
         self.speech_queue.put_nowait(message)
 
     def on_receive_command_config(self, _, message: m.CommandConfigMessage):
-        self.embedder.update_config(message)
+        for ac in message.commands:
+            for command in ac.commands:
+                self.ace.add_action(ac.actor, command.action, command.label)
         self.clear_speech_queue()
 
     def on_receive_current_actor(self, _, message: m.CurrentActorMessage):
@@ -91,7 +93,7 @@ class ActorCommandsService(RmqService):
             self.current_ai_actor = m.Actor.GUNNER
         elif message.actor == m.Actor.GUNNER:
             self.current_ai_actor = m.Actor.DRIVER
-        LOGGER.info(f"AI now controls {self.current_ai_actor}")
+        LOGGER.info("AI now controls %s", self.current_ai_actor)
 
     def on_action_recognition_producer_ready(self, producer: RmqProducer):
         self.action_recognition_producer = producer
@@ -100,7 +102,7 @@ class ActorCommandsService(RmqService):
     async def process_speech_recognition(self):
         while True:
             message = await self.speech_queue.get()
-            action, score = self.embedder.match_phrase_to_action(message.language, message.text, self.current_ai_actor)
+            action, score = self.ace.classify(self.current_ai_actor, message.text, message.language)
             self.on_action_matched(message.text, action, score)
 
     def on_action_matched(self, text, action, score):
@@ -126,7 +128,8 @@ class ActorCommandsService(RmqService):
 async def main():
     parser = get_service_arg_parser(description='Actor Commands Service')
     parser.add_argument_group('Subscription Arguments')
-    parser.add_argument('-r', '--routing-key', default='actor_commands_service',
+    parser.add_argument('-r', '--routing-key',
+                        default='actor_commands_service',
                         help='Routing key to subscribe to messages with')
     args = parser.parse_args()
 

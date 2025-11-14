@@ -1,5 +1,5 @@
 {
-  "last_modified": "2025-11-14T12:58:57.367841",
+  "last_modified": "2025-11-14T14:21:49.898218",
   "commands": [
     {
       "actor": 0,
@@ -28,6 +28,26 @@
           "action": 3,
           "reply": "Ceasing fire!",
           "label": "stop firing"
+        },
+        {
+          "action": 4,
+          "reply": "Moving to target!",
+          "label": "target is at twelve o clock"
+        },
+        {
+          "action": 5,
+          "reply": "Moving to target!",
+          "label": "target is at three o clock"
+        },
+        {
+          "action": 6,
+          "reply": "Moving to target!",
+          "label": "target is at six o clock"
+        },
+        {
+          "action": 7,
+          "reply": "Moving to target!",
+          "label": "target is at nine o clock"
         }
       ]
     }
