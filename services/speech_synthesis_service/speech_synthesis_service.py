@@ -1,4 +1,5 @@
 import asyncio
+import kokoro
 import logging
 
 from pika.exchange_type import ExchangeType
@@ -22,6 +23,7 @@ class SpeechSynthesisService(RmqService):
                  password: str = None):
         super().__init__(host, port, username, password)
 
+        self.sample_rate = 24000 # Kokoro always returns 24kHz audio
         self.event_loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
 
         self.tts_request_queue: asyncio.Queue[TTSRequestMessage] = asyncio.Queue()
@@ -48,6 +50,11 @@ class SpeechSynthesisService(RmqService):
             )
         )
 
+        self.pipeline = kokoro.KPipeline(
+            lang_code='a',
+            device='cuda'
+        )
+
     def on_tts_request_consumer_ready(self, consumer: RmqConsumer):
         self.tts_request_consumer = consumer
 
@@ -59,8 +66,16 @@ class SpeechSynthesisService(RmqService):
         asyncio.create_task(self.process_tts_requests())
 
     async def process_tts_requests(self):
-        async for message in self.tts_request_generator():
-            LOGGER.info('Processing TTS request: %s', message)
+        async for tts_req_msg in self.tts_request_generator():
+            LOGGER.info('Processing TTS request: %s', tts_req_msg)
+            generator = self.pipeline(tts_req_msg.text, voice=tts_req_msg.voice)
+            for i, (graphemes, phonemes, speech_tensor) in enumerate(generator):
+                tts_resp_msg = TTSResponseMessage(
+                    sample_rate=self.sample_rate,
+                    speech=speech_tensor.detach().cpu().numpy().tobytes()
+                )
+                LOGGER.info('Publishing TTS response message')
+                self.tts_response_producer.publish_message(tts_resp_msg)
 
     async def tts_request_generator(self):
         while True:

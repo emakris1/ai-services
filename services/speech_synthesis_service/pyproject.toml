@@ -5,6 +5,8 @@ description = "Consumes text from messages, synthesizes speech for that text, an
 requires-python = ">=3.13"
 dependencies = [
     "cgt-ai-core",
+    "en-core-web-sm",
+    "kokoro>=0.9.4",
 ]
 
 [tool.uv]
@@ -21,6 +23,8 @@ torch = [
 torchvision = [
     { index = "pytorch-cu129"},
 ]
+en_core_web_sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+
 
 [[tool.uv.index]]
 name = "pytorch-cu129"
