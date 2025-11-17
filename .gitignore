@@ -218,8 +218,6 @@ __marimo__/
 ## PyCharm ##
 #############
 
-.idea/
-
 # User-specific stuff
 .idea/**/workspace.xml
 .idea/**/tasks.xml
