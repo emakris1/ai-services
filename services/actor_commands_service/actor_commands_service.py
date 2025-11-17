@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from time import time
 
 from pika.exchange_type import ExchangeType
 
@@ -25,7 +24,7 @@ class ActorCommandsService(RmqService):
                  username: str = None,
                  password: str = None,
                  routing_key: str = '',
-                 score_threshold: float = 0.60,
+                 score_threshold: float = 0.65,
                  ):
         super().__init__(host, port, username, password)
 

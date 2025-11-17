@@ -13,10 +13,10 @@ class Action(enum.Enum):
     HALT = 1
     FIRE = 2
     CEASE_FIRE = 3
-    target_twelve_o_clock = 4
-    target_three_o_clock = 5
-    target_six_o_clock = 6
-    target_nine_o_clock = 7
+    TARGET_TWELVE_O_CLOCK = 4
+    TARGET_THREE_O_CLOCK = 5
+    TARGET_SIX_O_CLOCK = 6
+    TARGET_NINE_O_CLOCK = 7
 
 
 class Command(msgspec.Struct):
