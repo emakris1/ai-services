@@ -1,6 +1,15 @@
 enum Actor { driver, gunner }
 
-enum Action { drive, halt, fire, cease_fire }
+enum Action {
+  drive,
+  halt,
+  fire,
+  cease_fire,
+  target_twelve_o_clock,
+  target_three_o_clock,
+  target_six_o_clock,
+  target_nine_o_clock,
+}
 
 typedef Reply = String;
 typedef Phrase = String;
@@ -8,9 +17,9 @@ typedef Phrase = String;
 class Command {
   final Action action;
   Reply reply;
-  List<Phrase> phrases;
+  String label;
 
-  Command({required this.action, required this.reply, required this.phrases});
+  Command({required this.action, required this.reply, required this.label});
 }
 
 class ActorCommands {
