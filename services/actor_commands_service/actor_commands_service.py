@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from time import time
 
 from pika.exchange_type import ExchangeType
 
@@ -24,7 +25,7 @@ class ActorCommandsService(RmqService):
                  username: str = None,
                  password: str = None,
                  routing_key: str = '',
-                 score_threshold: float = 0.70,
+                 score_threshold: float = 0.60,
                  ):
         super().__init__(host, port, username, password)
 
@@ -86,6 +87,7 @@ class ActorCommandsService(RmqService):
         for ac in message.commands:
             for command in ac.commands:
                 self.ace.add_action(ac.actor, command.action, command.label)
+        LOGGER.info("Loaded %d actions into action command encoder", len(self.ace))
         self.clear_speech_queue()
 
     def on_receive_current_actor(self, _, message: m.CurrentActorMessage):
