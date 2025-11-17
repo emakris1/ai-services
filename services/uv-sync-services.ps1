@@ -1,14 +1,12 @@
 if (-not (Get-Command uv -ErrorAction SilentlyContinue))
 {
-    Write-Error "The 'uv' command was not found on PATH. Please install it or add it to PATH."
+    Write-Error "The command 'uv' was not found on PATH. Please install it and/or add it to PATH."
     exit 127
 }
 
-$Services = Get-ChildItem -Path $PSScriptRoot -Directory
-foreach ($Service in $Services)
+$ServiceDirs = Get-ChildItem -Path $PSScriptRoot -Directory
+foreach ($ServiceDir in $ServiceDirs)
 {
-    Push-Location $Service.FullName
-    Write-Host "Syncing packages for $($Service.Name)" -ForegroundColor Cyan
-    uv sync --reinstall-package cgt-ai-core
-    Pop-Location
+    Write-Host "Syncing packages for $($ServiceDir.Name)" -ForegroundColor Cyan
+    uv sync --directory $ServiceDir.FullName --reinstall-package cgt-ai-core
 }
