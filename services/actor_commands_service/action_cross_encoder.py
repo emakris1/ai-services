@@ -1,7 +1,7 @@
 import re
 import string
 from transformers import pipeline
-from messages import Actor, Action
+from messages import Actor, Action, Command
 
 
 class ActionCrossEncoder:
@@ -10,16 +10,16 @@ class ActionCrossEncoder:
             "zero-shot-classification",
             model='facebook/bart-large-mnli')
         self._warm_up_model()
-        self.actions: dict[Actor, dict[str, Action]] = {}
+        self.actions: dict[Actor, dict[str, tuple[Action, str]]] = {}
 
-    def add_action(self, actor: Actor, action: Action, label: str):
+    def add_action_reply(self, actor: Actor, command: Command):
         if actor not in self.actions:
             self.actions[actor] = {}
-        self.actions[actor][label] = action
+        self.actions[actor][command.label] = (command.action, command.reply)
 
-    def classify(self, actor: Actor, phrase: str, language: str = 'en') -> tuple[Action, float]:
+    def classify(self, actor: Actor, phrase: str, language: str = 'en') -> tuple[tuple[Action, str], float]:
         if language != 'en' or actor not in self.actions:
-            return Action.UNKNOWN, -1.0
+            return (Action.UNKNOWN, ''), -1.0
         phrases = list(self.actions[actor].keys())
         cleaned_phrase = self._clean_text(phrase)
         inference = self.classifier(cleaned_phrase, phrases)
