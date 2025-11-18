@@ -7,6 +7,7 @@
     <orderEntry type="module" module-name="core" />
     <orderEntry type="module" module-name="actor_commands_service" />
     <orderEntry type="module" module-name="audio_capture_service" />
+    <orderEntry type="module" module-name="audio_playback_service" />
     <orderEntry type="module" module-name="speech_recognition_service" />
     <orderEntry type="module" module-name="speech_synthesis_service" />
     <orderEntry type="module" module-name="test_services" />
