@@ -12,29 +12,39 @@ A collection of AI services and service infrastructure designed for use with the
 - [espeak-ng v1.52](https://github.com/espeak-ng/espeak-ng/releases/download/1.51/espeak-ng-X64.msi)
 
 ## Setup
-1. Install all prerequisites 
-    1. Follow the [setup instructions](https://docs.flutter.dev/install/manual#install-flutter) for a manual Flutter installation
+1. Install all prerequisites
+    1. Follow the [setup instructions](https://docs.flutter.dev/install/manual#install-flutter) for a manual Flutter installation.
 2. If you have not previously run PowerShell scripts in your environment before,
    run the following command in an admin-elevated PowerShell terminal to enable PowerShell script execution:
    ```
    Set-ExecutionPolicy RemoteSigned
    ```
-3. Run `services\uv-sync-services.ps1` to generate virtual environments and download dependencies with **uv**
+3. Run `setup.ps1` to generate virtual environments and download dependencies with **uv**, and build the **Flutter** UI.
 
-## Modifying Core
+## Reinstalling Core
 Since the **cgt-ai-core** library package is not an editable dependency, any source changes you make will not be
 reflected in dependent service applications until the package is reinstalled.
 
-The simplest way to fix this is to force uv to reinstall packages in the given service project:
+The simplest way to fix this is to force **uv** to reinstall the **cgt-ai-core** package in the given service project:
 ```
 cd services\<service>
-uv sync --reinstall
+uv sync --reinstall-package cgt-ai-core
 ```
-Alternatively, you can re-run `services\uv-sync-services.ps1`, which does this for all services.
+Alternatively, you can run `services\uv-sync-services.ps1`, which does this for all services.
+
+## Rebuilding the UI
+To rebuild the UI, run `ui\build-ui.ps1`.
+
+## Quick Start
+To run all services and the command editor UI, run `run.ps1`.
 
 ## Running Services
 To run a service, open a terminal in the desired service directory and run `uv run <service>.py`.
 
 Each service has its own set of arguments, which can be viewed by running `uv run <service>.py --help`.
 
-Alternatively, you can run `uv-run-services.ps1` to open a new terminal window that will contain each service running in its own tab.
+Alternatively, you can run `uv-run-services.ps1` to open a new terminal window
+that will contain each service running in its own tab.
+
+## Running the UI
+To run the UI, open a terminal in the `ui` directory and run `run-ui.ps1`.
