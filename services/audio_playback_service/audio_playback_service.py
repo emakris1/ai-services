@@ -5,7 +5,7 @@ import sounddevice as sd
 from pika.exchange_type import ExchangeType
 
 from cgt_ai_core.log_config import LOG_FORMAT
-from cgt_ai_core.messages import TTSResponseMessage
+from cgt_ai_core.messages import AudioMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_service import RmqService
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
@@ -33,34 +33,34 @@ class AudioPlaybackService(RmqService):
 
         LOGGER.info('Playing on audio device {index: %d, name: %s}.', self.device_index, self.device_name)
 
-        self.tts_response_queue: asyncio.Queue[TTSResponseMessage] = asyncio.Queue()
+        self.audio_playback_queue: asyncio.Queue[AudioMessage] = asyncio.Queue()
 
-        self.tts_response_consumer: RmqConsumer | None = None
+        self.audio_playback_consumer: RmqConsumer | None = None
         self.add_consumer(
             RmqConsumer(
-                message_type=TTSResponseMessage,
+                message_type=AudioMessage,
                 connection_params=self.connection_params,
-                exchange_name='tts_response',
+                exchange_name='audio_playback',
                 exchange_type=ExchangeType.direct,
-                on_consumer_ready_callback=self.on_tts_response_consumer_ready,
-                on_message_callback=self.on_tts_response_message
+                on_consumer_ready_callback=self.on_audio_playback_consumer_ready,
+                on_message_callback=self.on_audio_playback_message
             )
         )
 
-    def on_tts_response_consumer_ready(self, consumer: RmqConsumer):
-        self.tts_response_consumer = consumer
-        asyncio.create_task(self.process_tts_responses())
+    def on_audio_playback_consumer_ready(self, consumer: RmqConsumer):
+        self.audio_playback_consumer = consumer
+        asyncio.create_task(self.process_audio_playback())
 
-    def on_tts_response_message(self, _unused_consumer: RmqConsumer, message: TTSResponseMessage):
-        self.tts_response_queue.put_nowait(message)
+    def on_audio_playback_message(self, _unused_consumer: RmqConsumer, message: AudioMessage):
+        self.audio_playback_queue.put_nowait(message)
 
-    async def process_tts_responses(self):
-        async for message in self.tts_response_generator():
-            LOGGER.info('Processing TTS response')
+    async def process_audio_playback(self):
+        async for message in self.audio_playback_generator():
+            LOGGER.info('TODO: implement processing of audio playback message.')
 
-    async def tts_response_generator(self):
+    async def audio_playback_generator(self):
         while True:
-            yield await self.tts_response_queue.get()
+            yield await self.audio_playback_queue.get()
 
 
 async def main():

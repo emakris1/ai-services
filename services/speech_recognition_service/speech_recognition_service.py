@@ -11,7 +11,7 @@ from faster_whisper.transcribe import Segment, TranscriptionInfo
 from pika.exchange_type import ExchangeType
 
 from cgt_ai_core.log_config import LOG_FORMAT
-from cgt_ai_core.messages import AudioCaptureMessage, SpeechRecognitionMessage
+from cgt_ai_core.messages import AudioMessage, SpeechRecognitionMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.rmq_service import RmqService
@@ -29,7 +29,7 @@ class SpeechRecognitionService(RmqService):
                  password: str = None):
         super().__init__(host, port, username, password)
 
-        self.audio_capture_queue: asyncio.Queue[AudioCaptureMessage] = asyncio.Queue()
+        self.audio_capture_queue: asyncio.Queue[AudioMessage] = asyncio.Queue()
 
         self.dtype: np.dtype[np.float32] = np.float32
         self.sample_rate: int = 16000 # most ASR libraries expect 16kHz audio
@@ -46,7 +46,7 @@ class SpeechRecognitionService(RmqService):
         self.audio_capture_consumer: RmqConsumer | None = None
         self.add_consumer(
             RmqConsumer(
-                message_type=AudioCaptureMessage,
+                message_type=AudioMessage,
                 connection_params=self.connection_params,
                 exchange_name='audio_capture',
                 exchange_type=ExchangeType.direct,
@@ -77,7 +77,7 @@ class SpeechRecognitionService(RmqService):
     def on_audio_capture_consumer_ready(self, consumer: RmqConsumer):
         self.audio_capture_consumer = consumer
 
-    def on_audio_capture_message(self, _unused_consumer: RmqConsumer, message: AudioCaptureMessage):
+    def on_audio_capture_message(self, _unused_consumer: RmqConsumer, message: AudioMessage):
         self.audio_capture_queue.put_nowait(message)
 
     def on_speech_recognition_producer_ready(self, producer: RmqProducer):
@@ -96,7 +96,7 @@ class SpeechRecognitionService(RmqService):
         while True:
             yield await self.audio_capture_queue.get()
 
-    def append_samples(self, message: AudioCaptureMessage):
+    def append_samples(self, message: AudioMessage):
         # convert raw bytes to a numpy array
         flat_buffer = np.frombuffer(buffer=message.samples, dtype=self.dtype)
 
