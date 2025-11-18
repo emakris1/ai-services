@@ -1,23 +1,43 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:app/data/actor_commands.dart';
-import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
+
+const String fileName = 'actor_commands.json';
 
 class ActorCommandsRepo {
-  final String fileLocation;
+  late final String fileLocation;
 
-  ActorCommandsRepo({required this.fileLocation});
-
-  Future<Map<String, dynamic>> _loadJson() async {
-    final jsonString = await rootBundle.loadString(fileLocation);
-    return jsonDecode(jsonString) as Map<String, dynamic>;
+  ActorCommandsRepo() {
+    final base = Platform.environment['LOCALAPPDATA']!;
+    final folder = p.join(base, 'cgt_ace');
+    Directory(folder).createSync(recursive: true);
+    fileLocation = p.join(folder, fileName);
   }
 
   Future<void> _saveJson(Map<String, dynamic> data) async {
     final file = File(fileLocation);
+
+    if (!await file.exists()) {
+      await file.create(recursive: true);
+    }
+
     final encoder = const JsonEncoder.withIndent('  ');
     final prettyString = encoder.convert(data);
+
     await file.writeAsString(prettyString);
+  }
+
+  Future<Map<String, dynamic>> _loadJson() async {
+    final file = File(fileLocation);
+
+    if (!await file.exists()) {
+      await _saveJson(toDomain(CommandConfig.empty()));
+      return _loadJson();
+    }
+
+    final jsonString = await file.readAsString();
+    return jsonDecode(jsonString) as Map<String, dynamic>;
   }
 
   Map<String, dynamic> toDomain(CommandConfig config) {

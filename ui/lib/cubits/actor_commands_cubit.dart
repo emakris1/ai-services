@@ -28,9 +28,7 @@ class ActorCommandsState {
 }
 
 class ActorCommandsCubit extends Cubit<ActorCommandsState> {
-  final ActorCommandsRepo repo = ActorCommandsRepo(
-    fileLocation: 'assets/commands.json',
-  );
+  final ActorCommandsRepo repo = ActorCommandsRepo();
   final RabbitMQProducer producer = RabbitMQProducer(
     exchangeName: "actor_commands",
     routingKey: "actor_commands_service",

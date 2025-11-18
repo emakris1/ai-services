@@ -20,6 +20,10 @@ class Command {
   String label;
 
   Command({required this.action, required this.reply, required this.label});
+
+  static Command empty(Action action) {
+    return Command(action: action, reply: "", label: "");
+  }
 }
 
 class ActorCommands {
@@ -34,4 +38,27 @@ class CommandConfig {
   final List<ActorCommands> commands;
 
   CommandConfig({required this.lastModified, required this.commands});
+
+  static CommandConfig empty() {
+    return CommandConfig(
+      lastModified: DateTime.now(),
+      commands: [
+        ActorCommands(
+          actor: Actor.driver,
+          commands: [Command.empty(Action.drive), Command.empty(Action.halt)],
+        ),
+        ActorCommands(
+          actor: Actor.gunner,
+          commands: [
+            Command.empty(Action.fire),
+            Command.empty(Action.cease_fire),
+            Command.empty(Action.target_twelve_o_clock),
+            Command.empty(Action.target_three_o_clock),
+            Command.empty(Action.target_six_o_clock),
+            Command.empty(Action.target_nine_o_clock),
+          ],
+        ),
+      ],
+    );
+  }
 }
