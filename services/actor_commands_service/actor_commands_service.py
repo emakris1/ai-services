@@ -3,6 +3,8 @@ import logging
 
 from pika.exchange_type import ExchangeType
 
+import cgt_ai_core.tts_enums as tts
+
 from cgt_ai_core.log_config import LOG_FORMAT
 from cgt_ai_core.messages import SpeechRecognitionMessage, TTSRequestMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
@@ -126,7 +128,11 @@ class ActorCommandsService(RmqService):
             LOGGER.info('Publishing action recognition message:\n\t%s', act_rec_msg)
             self.action_recognition_producer.publish_message(act_rec_msg)
 
-            tts_req_msg = TTSRequestMessage(voice='am_fenrir', text=text)
+            tts_req_msg = TTSRequestMessage(
+                language=tts.Language.AMERICAN_ENGLISH,
+                voice=tts.Voice.AMERICAN_MALE_FENRIR,
+                text=reply
+            )
             LOGGER.info('Publishing TTS request message:\n\t%s', tts_req_msg)
             self.tts_request_producer.publish_message(tts_req_msg)
 

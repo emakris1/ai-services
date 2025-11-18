@@ -4,6 +4,8 @@ import logging
 
 from pika.exchange_type import ExchangeType
 
+import cgt_ai_core.tts_enums as tts
+
 from cgt_ai_core.log_config import LOG_FORMAT
 from cgt_ai_core.messages import TTSRequestMessage, TTSResponseMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
@@ -25,7 +27,7 @@ class SpeechSynthesisService(RmqService):
 
         self.tts_request_queue: asyncio.Queue[TTSRequestMessage] = asyncio.Queue()
 
-        self.sample_rate = 24000 # Kokoro always returns 24kHz audio
+        self.sample_rate: int = 24000 # Kokoro always returns 24kHz audio
 
         self.tts_request_consumer: RmqConsumer | None = None
         self.add_consumer(
@@ -49,10 +51,14 @@ class SpeechSynthesisService(RmqService):
             )
         )
 
-        self.pipeline = kokoro.KPipeline(
-            lang_code='a',
-            device='cuda'
-        )
+        self.model: kokoro.KModel = kokoro.KModel()
+        self.pipelines: dict[tts.Language, kokoro.KPipeline] = {}
+        for language in tts.Language:
+            self.pipelines[language]: kokoro.KPipeline = kokoro.KPipeline(
+                lang_code=language.value,
+                model=self.model,
+                device='cuda'
+            )
 
     def on_tts_request_consumer_ready(self, consumer: RmqConsumer):
         self.tts_request_consumer = consumer
@@ -67,13 +73,21 @@ class SpeechSynthesisService(RmqService):
     async def process_tts_requests(self):
         async for tts_req_msg in self.tts_request_generator():
             LOGGER.info('Processing TTS request: %s', tts_req_msg)
-            generator = self.pipeline(tts_req_msg.text, voice=tts_req_msg.voice)
+
+            if tts_req_msg.language not in self.pipelines:
+                LOGGER.warning(
+                    'No pipeline found for language %s. Discarding request.',
+                    tts_req_msg.language
+                )
+                continue
+
+            generator = self.pipelines[tts_req_msg.language](tts_req_msg.text, voice=tts_req_msg.voice.value)
             for i, (graphemes, phonemes, speech_tensor) in enumerate(generator):
                 tts_resp_msg = TTSResponseMessage(
                     sample_rate=self.sample_rate,
                     speech=speech_tensor.detach().cpu().numpy().tobytes()
                 )
-                LOGGER.info('Publishing TTS response message')
+                LOGGER.info('Publishing TTS response message.')
                 self.tts_response_producer.publish_message(tts_resp_msg)
 
     async def tts_request_generator(self):
