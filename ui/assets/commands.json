@@ -6,12 +6,12 @@
       "commands": [
         {
           "action": 0,
-          "reply": "Copy, driving!",
+          "reply": "Roger, driving!",
           "label": "drive"
         },
         {
           "action": 1,
-          "reply": "Copy, stopping!",
+          "reply": "Roger, stopping!",
           "label": "stop"
         }
       ]
@@ -21,32 +21,32 @@
       "commands": [
         {
           "action": 2,
-          "reply": "Copy. Firing!",
+          "reply": "Roger. Firing!",
           "label": "start firing"
         },
         {
           "action": 3,
-          "reply": "Copy. ceasing fire!",
+          "reply": "Roger. ceasing fire!",
           "label": "stop firing"
         },
         {
           "action": 4,
-          "reply": "Copy. Engaging target, twelve o clock!",
+          "reply": "Roger. Engaging target, twelve o clock!",
           "label": "target is at twelve o clock"
         },
         {
           "action": 5,
-          "reply": "Copy. Engaging target, three o clock!",
+          "reply": "Roger. Engaging target, three o clock!",
           "label": "target is at three o clock"
         },
         {
           "action": 6,
-          "reply": "Copy. Engaging target, six o clock!",
+          "reply": "Roger. Engaging target, six o clock!",
           "label": "target is at six o clock"
         },
         {
           "action": 7,
-          "reply": "Copy. Engaging target, nine o clock!",
+          "reply": "Roger. Engaging target, nine o clock!",
           "label": "target is at nine o clock"
         }
       ]
