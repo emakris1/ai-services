@@ -25,8 +25,6 @@ class SpeechSynthesisService(RmqService):
 
         self.sample_rate = 24000 # Kokoro always returns 24kHz audio
 
-        self.event_loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
-
         self.tts_request_queue: asyncio.Queue[TTSRequestMessage] = asyncio.Queue()
 
         self.tts_request_consumer: RmqConsumer | None = None

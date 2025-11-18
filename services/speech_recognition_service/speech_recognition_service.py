@@ -29,8 +29,6 @@ class SpeechRecognitionService(RmqService):
                  password: str = None):
         super().__init__(host, port, username, password)
 
-        self.event_loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
-
         self.audio_capture_queue: asyncio.Queue[AudioCaptureMessage] = asyncio.Queue()
 
         self.dtype: np.dtype[np.float32] = np.float32
