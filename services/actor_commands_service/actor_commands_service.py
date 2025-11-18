@@ -122,20 +122,13 @@ class ActorCommandsService(RmqService):
     def on_action_matched(self, text, action, reply, score):
         LOGGER.info(f"Phrase \"{text}\", Score: {round(score, 2)}/1")
         if score > self.score_threshold:
-            message = m.ActionRecognitionMessage(score=score, actor=self.current_ai_actor, action=action)
-            LOGGER.info('Publishing action recognition message:\n\t%s', message)
-            self.action_recognition_producer.publish_message(message)
+            act_rec_msg = m.ActionRecognitionMessage(score=score, actor=self.current_ai_actor, action=action)
+            LOGGER.info('Publishing action recognition message:\n\t%s', act_rec_msg)
+            self.action_recognition_producer.publish_message(act_rec_msg)
 
-        # TODO: Add voice selection for actor and no copy phrase to UI
-        if score > 0.0:
-            if 0.0 < score < self.score_threshold:
-                text = 'No copy, over.'
-            else:
-                text = reply
-
-            message = TTSRequestMessage(voice='am_fenrir', text=text)
-            LOGGER.info('Publishing TTS request message:\n\t%s', message)
-            self.tts_request_producer.publish_message(message)
+            tts_req_msg = TTSRequestMessage(voice='am_fenrir', text=text)
+            LOGGER.info('Publishing TTS request message:\n\t%s', tts_req_msg)
+            self.tts_request_producer.publish_message(tts_req_msg)
 
     def clear_speech_queue(self):
         queue_empty = False
