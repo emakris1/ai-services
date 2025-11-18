@@ -4,7 +4,7 @@ if (-not (Get-Command flutter -ErrorAction SilentlyContinue))
     exit 127
 }
 
-$UIDir = $(Get-Item -Path $PSScriptRoot)
+$UIDir = Get-Item -Path $PSScriptRoot
 Write-Host "Building $($UIDir.Name)" -ForegroundColor Blue
 Push-Location $UIDir.FullName
 flutter build windows --release
