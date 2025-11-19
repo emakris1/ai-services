@@ -103,7 +103,7 @@ class SpeechRecognitionService(RmqService):
         # if the audio capture has multiple channels, we need to average down to one channel
         # most ASR libraries including silero and whisper expect mono 16kHz audio
         if message.channels > 1:
-            LOGGER.debug('Audio capture has %d channels, averaging down to mono.', message.channels)
+            LOGGER.debug('Audio has %d channels, averaging down to mono.', message.channels)
             # reshape the array to match the number of audio channels
             frames = flat_buffer.size // message.channels
             shaped_buffer = flat_buffer.reshape(frames, message.channels)
@@ -115,7 +115,8 @@ class SpeechRecognitionService(RmqService):
         # if the audio capture has a sample rate other than 16kHz, we need to resample to 16kHz
         # most ASR libraries including silero and whisper expect mono 16kHz audio
         if message.sample_rate != self.sample_rate:
-            LOGGER.debug('Audio capture has %d sample rate, resampling to 16kHz.', message.sample_rate)
+            LOGGER.debug('Audio has %dkHz sample rate, resampling to %dkHz.',
+                         message.sample_rate/1000, self.sample_rate/1000)
             resampled_buffer = resampy.resample(x=mono_buffer, sr_orig=message.sample_rate, sr_new=self.sample_rate)
         else:
             resampled_buffer = mono_buffer
