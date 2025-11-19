@@ -126,7 +126,6 @@ class AudioPlaybackService(RmqService):
             yield await self.audio_playback_queue.get()
 
     async def play_output_stream(self):
-        loop = asyncio.get_event_loop()
         stop_event = asyncio.Event()
 
         def callback(outdata: np.ndarray, _unused_frames: int, _unused_time: Any, _unused_status: sd.CallbackFlags):
