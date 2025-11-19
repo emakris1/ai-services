@@ -32,7 +32,7 @@ class ActorCommandsRepo {
     final file = File(fileLocation);
 
     if (!await file.exists()) {
-      await _saveJson(toDomain(CommandConfig.empty()));
+      await _saveJson(toDomain(CommandConfig.initial()));
       return _loadJson();
     }
 
