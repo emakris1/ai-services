@@ -3,8 +3,10 @@ import logging
 
 from pika.exchange_type import ExchangeType
 
+import cgt_ai_core.tts_enums as tts
+
 from cgt_ai_core.log_config import LOG_FORMAT
-from cgt_ai_core.messages import SpeechRecognitionMessage
+from cgt_ai_core.messages import SpeechRecognitionMessage, TTSRequestMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.rmq_service import RmqService
@@ -76,6 +78,16 @@ class ActorCommandsService(RmqService):
             )
         )
 
+        self.tts_request_producer: RmqProducer | None = None
+        self.add_producer(
+            RmqProducer(
+                connection_params=self.connection_params,
+                exchange_name='tts_request',
+                exchange_type=ExchangeType.direct,
+                on_producer_ready_callback=self.on_tts_request_producer_ready
+            )
+        )
+
         self.ace = ActionCrossEncoder()
         self.speech_queue: asyncio.Queue[SpeechRecognitionMessage] = asyncio.Queue()
 
@@ -85,7 +97,7 @@ class ActorCommandsService(RmqService):
     def on_receive_command_config(self, _, message: m.CommandConfigMessage):
         for ac in message.commands:
             for command in ac.commands:
-                self.ace.add_action(ac.actor, command.action, command.label)
+                self.ace.add_action_reply(ac.actor, command)
         LOGGER.info("Loaded %d actions into action command encoder", len(self.ace))
         self.clear_speech_queue()
 
@@ -100,22 +112,29 @@ class ActorCommandsService(RmqService):
         self.action_recognition_producer = producer
         asyncio.create_task(self.process_speech_recognition())
 
+    def on_tts_request_producer_ready(self, producer: RmqProducer):
+        self.tts_request_producer = producer
+
     async def process_speech_recognition(self):
         while True:
             message = await self.speech_queue.get()
-            action, score = self.ace.classify(self.current_ai_actor, message.text, message.language)
-            self.on_action_matched(message.text, action, score)
+            (action, reply), score = self.ace.classify(self.current_ai_actor, message.text, message.language)
+            self.on_action_matched(message.text, action, reply, score)
 
-    def on_action_matched(self, text, action, score):
+    def on_action_matched(self, text, action, reply, score):
+        LOGGER.info(f"Phrase \"{text}\", Score: {round(score, 2)}/1")
         if score > self.score_threshold:
-            self.action_recognition_producer.publish_message(
-                m.ActionRecognitionMessage(
-                    score=score,
-                    actor=self.current_ai_actor,
-                    action=action
-                )
+            act_rec_msg = m.ActionRecognitionMessage(score=score, actor=self.current_ai_actor, action=action)
+            LOGGER.info('Publishing action recognition message:\n\t%s', act_rec_msg)
+            self.action_recognition_producer.publish_message(act_rec_msg)
+
+            tts_req_msg = TTSRequestMessage(
+                language=tts.Language.AMERICAN_ENGLISH,
+                voice=tts.Voice.AMERICAN_MALE_FENRIR,
+                text=reply
             )
-        LOGGER.info(f"Phrase \"{text}\",\tAction: {action},\tScore: {round(score, 2)}/1")
+            LOGGER.info('Publishing TTS request message:\n\t%s', tts_req_msg)
+            self.tts_request_producer.publish_message(tts_req_msg)
 
     def clear_speech_queue(self):
         queue_empty = False
