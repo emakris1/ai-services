@@ -130,7 +130,7 @@ class ActorCommandsService(RmqService):
 
             tts_req_msg = TTSRequestMessage(
                 language=tts.Language.AMERICAN_ENGLISH,
-                voice=tts.Voice.AMERICAN_MALE_FENRIR,
+                voice=tts.Voice.AMERICAN_MALE_ONYX,
                 text=reply
             )
             LOGGER.info('Publishing TTS request message:\n\t%s', tts_req_msg)
