@@ -1,8 +1,13 @@
 import asyncio
 import logging
+import numpy as np
+import queue
+import resampy
 import sounddevice as sd
+import threading
 
 from pika.exchange_type import ExchangeType
+from typing import Any
 
 from cgt_ai_core.log_config import LOG_FORMAT
 from cgt_ai_core.messages import AudioMessage
@@ -20,7 +25,8 @@ class AudioPlaybackService(RmqService):
                  port: int = None,
                  username: str = None,
                  password: str = None,
-                 device_index: int = None):
+                 device_index: int = None,
+                 sample_rate: int = None):
         super().__init__(host, port, username, password)
 
         if device_index is not None:
@@ -31,9 +37,38 @@ class AudioPlaybackService(RmqService):
         self.device_index: int = self.device['index']
         self.device_name: str = self.device['name']
 
-        LOGGER.info('Playing on audio device {index: %d, name: %s}.', self.device_index, self.device_name)
+        self.channels: int = 2 # only stereo audio supported
 
+        if sample_rate is not None:
+            self.sample_rate: int = sample_rate
+        else:
+            default_sample_rate = int(self.device['default_samplerate'])
+            LOGGER.info(
+                'No sample rate provided. Playing at audio device default of %d Hz.',
+                default_sample_rate
+            )
+            self.sample_rate: int = default_sample_rate
+
+        try:
+            sd.check_output_settings(device=self.device_index, channels=self.channels, samplerate=self.sample_rate)
+        except sd.PortAudioError as exc:
+            LOGGER.exception('Invalid audio device settings', exc_info=exc)
+            raise exc
+
+        LOGGER.info(
+            'Playing %d channels at a rate of %d Hz on audio device {index: %d, name: %s}.',
+            self.channels,
+            self.sample_rate,
+            self.device_index,
+            self.device_name
+        )
+
+        self.dtype: np.dtype[np.float32] = np.float32
         self.audio_playback_queue: asyncio.Queue[AudioMessage] = asyncio.Queue()
+        self.output_stream_buffer: np.ndarray[tuple[int, int], np.dtype[np.float32]] = np.empty(
+            shape=(0, self.channels), dtype=self.dtype)
+
+        self.mutex = threading.Lock()
 
         self.audio_playback_consumer: RmqConsumer | None = None
         self.add_consumer(
@@ -49,18 +84,84 @@ class AudioPlaybackService(RmqService):
 
     def on_audio_playback_consumer_ready(self, consumer: RmqConsumer):
         self.audio_playback_consumer = consumer
-        asyncio.create_task(self.process_audio_playback())
+        asyncio.gather(self.process_audio_playback(), self.play_output_stream())
 
     def on_audio_playback_message(self, _unused_consumer: RmqConsumer, message: AudioMessage):
         self.audio_playback_queue.put_nowait(message)
 
     async def process_audio_playback(self):
         async for message in self.audio_playback_generator():
-            LOGGER.info('TODO: implement processing of audio playback message.')
+            # convert raw bytes to a numpy array
+            flat_buffer = np.frombuffer(buffer=message.samples, dtype=self.dtype)
+
+            # if the audio capture has multiple channels, we need to average down to one channel
+            if message.channels > 1:
+                LOGGER.debug('Audio has %d channels, averaging down to mono.', message.channels)
+                # reshape the array to match the number of audio channels
+                frames = flat_buffer.size // message.channels
+                shaped_buffer = flat_buffer.reshape(frames, message.channels)
+                # average samples across channel axis
+                mono_buffer = shaped_buffer.mean(axis=1, dtype=self.dtype)
+            else:
+                mono_buffer = flat_buffer
+
+            # if the audio capture has a sample rate other than the output audio device sample rate,
+            # we need to resample to the output audio device sample rate
+            if message.sample_rate != self.sample_rate:
+                LOGGER.debug('Audio has %dkHz sample rate, resampling to %dkHz.',
+                             message.sample_rate/1000, self.sample_rate/1000)
+                resampled_buffer = resampy.resample(x=mono_buffer, sr_orig=message.sample_rate, sr_new=self.sample_rate)
+            else:
+                resampled_buffer = mono_buffer
+
+            # Expand mono to stereo for a better playback experience
+            stereo_buffer = np.column_stack((resampled_buffer, resampled_buffer)).astype(self.dtype, copy=False)
+
+            self.mutex.acquire()
+            self.output_stream_buffer = np.concatenate((self.output_stream_buffer, stereo_buffer))
+            self.mutex.release()
 
     async def audio_playback_generator(self):
         while True:
             yield await self.audio_playback_queue.get()
+
+    async def play_output_stream(self):
+        loop = asyncio.get_event_loop()
+        stop_event = asyncio.Event()
+
+        def callback(outdata: np.ndarray, _unused_frames: int, _unused_time: Any, _unused_status: sd.CallbackFlags):
+            if not self.mutex.acquire(blocking=False):
+                LOGGER.debug('Could not acquire lock for output stream buffer - zero fill (silence)')
+                outdata.fill(0)
+                return
+
+            frames_needed = outdata.shape[0]
+            frames_available = self.output_stream_buffer.shape[0]
+
+            if frames_available >= frames_needed:
+                LOGGER.debug('Output stream buffer has all frames available - full fill')
+                outdata[:, :] = self.output_stream_buffer[:frames_needed, :]
+                self.output_stream_buffer = self.output_stream_buffer[frames_needed:, :]
+            elif frames_available > 0:
+                LOGGER.debug('Output stream buffer has some frames available - partial fill')
+                outdata[:frames_available, :] = self.output_stream_buffer[:frames_available, :]
+                outdata[frames_available:, :] = 0
+                self.output_stream_buffer = self.output_stream_buffer[:0, :]
+            else:
+                LOGGER.debug('Output stream buffer has no frames available - zero fill (silence)')
+                outdata.fill(0)
+
+            self.mutex.release()
+
+        output_stream = sd.OutputStream(
+            device=self.device_index,
+            channels=self.channels,
+            samplerate=self.sample_rate,
+            dtype=np.float32,
+            callback=callback
+        )
+        with output_stream:
+            await stop_event.wait()
 
 
 async def main():
@@ -70,6 +171,8 @@ async def main():
                               help='Index of audio device to play on')
     device_group.add_argument('-m', '--device-prompt', action='store_true',
                               help='Show a prompt to select which audio device to play on from a list of available devices')
+    playback_group = parser.add_argument_group('Playback Arguments')
+    playback_group.add_argument('-s', '--sample-rate', type=int, default=None, help='Sample rate in Hz')
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level), format=LOG_FORMAT)
@@ -91,6 +194,7 @@ async def main():
         username=args.rmq_username,
         password=args.rmq_password,
         device_index=args.device_index,
+        sample_rate=args.sample_rate
     )
     await service.run()
 
