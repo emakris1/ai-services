@@ -22,6 +22,8 @@ class TTSRequestMessage(msgspec.Struct):
     language: tts.Language
     voice: tts.Voice
     text: str
+    cache_speech: bool = True
+    play_immediately: bool = True
 
 
 def enc_hook(obj: Any) -> Any:

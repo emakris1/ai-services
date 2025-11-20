@@ -1,6 +1,7 @@
 import asyncio
 import kokoro
 import logging
+import numpy as np
 
 from pika.exchange_type import ExchangeType
 
@@ -28,6 +29,8 @@ class SpeechSynthesisService(RmqService):
 
         self.channels: int = 1 # Kokoro only returns mono audio
         self.sample_rate: int = 24000 # Kokoro only returns 24kHz audio
+
+        self.speech_cache: dict[tuple[tts.Language, tts.Voice, str], list[np.ndarray]] = {}
 
         self.tts_request_consumer: RmqConsumer | None = None
         self.add_consumer(
@@ -86,14 +89,25 @@ class SpeechSynthesisService(RmqService):
                 )
                 continue
 
-            generator = self.pipelines[tts_req_msg.language](tts_req_msg.text, voice=tts_req_msg.voice.value)
-            for i, (graphemes, phonemes, speech_tensor) in enumerate(generator):
-                audio_msg = AudioMessage(
-                    sample_rate=self.sample_rate,
-                    samples=speech_tensor.detach().cpu().numpy()
-                )
-                LOGGER.info('Publishing audio playback message.')
-                self.audio_playback_producer.publish_message(audio_msg)
+            key = (tts_req_msg.language, tts_req_msg.voice, tts_req_msg.text)
+            if key in self.speech_cache:
+                speech_chunks = self.speech_cache[key]
+            else:
+                speech_chunks = []
+                generator = self.pipelines[tts_req_msg.language](tts_req_msg.text, voice=tts_req_msg.voice.value)
+                for index, (graphemes, phonemes, speech_tensor) in enumerate(generator):
+                    speech_chunks.append(speech_tensor.detach().cpu().numpy())
+                if tts_req_msg.cache_speech:
+                    self.speech_cache[key] = speech_chunks
+
+            if tts_req_msg.play_immediately:
+                for speech_chunk in speech_chunks:
+                    audio_msg = AudioMessage(
+                        sample_rate=self.sample_rate,
+                        samples=speech_chunk
+                    )
+                    LOGGER.info('Publishing audio playback message.')
+                    self.audio_playback_producer.publish_message(audio_msg)
 
     async def tts_request_generator(self):
         while True:

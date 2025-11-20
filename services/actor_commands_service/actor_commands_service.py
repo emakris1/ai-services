@@ -105,6 +105,14 @@ class ActorCommandsService(RmqService):
             self.voice_map[ac.actor] = ac.voice
             for command in ac.commands:
                 self.ace.add_action_reply(ac.actor, command)
+                self.tts_request_producer.publish_message(
+                    TTSRequestMessage(
+                        language=tts.Language.AMERICAN_ENGLISH,
+                        voice=self.get_voice(ac.voice),
+                        text=command.reply,
+                        play_immediately=False
+                    )
+                )
         LOGGER.info("Loaded %d actions into action command encoder", len(self.ace))
         self.clear_speech_queue()
 
@@ -152,9 +160,12 @@ class ActorCommandsService(RmqService):
                 queue_empty = True
 
     def get_current_voice(self) -> tts.Voice:
-        voice_index = self.voice_map[self.current_ai_actor]
+        return self.get_voice(self.voice_map[self.current_ai_actor])
+
+    @staticmethod
+    def get_voice(index: int) -> tts.Voice:
         voices = list(tts.Voice)
-        return voices[0] if voice_index >= len(voices) else voices[voice_index]
+        return voices[0] if index >= len(voices) else voices[index]
 
 
 async def main():
