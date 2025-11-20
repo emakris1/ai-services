@@ -28,15 +28,16 @@ class ActionCrossEncoder:
         top_score = inference['scores'][0]
         return self.actions[actor][top_label], top_score
 
+    def _warm_up_model(self):
+        # First pass is slow, so do a dummy classification to warm up
+        self.classifier("test", ["test"])
+
     def __len__(self):
         return sum(len(actions) for actions in self.actions.values())
 
-    def _clean_text(self, text: str) -> str:
+    @staticmethod
+    def _clean_text(text: str) -> str:
         t = text.lower()
         t = t.translate(str.maketrans('', '', string.punctuation))
         t = re.sub(r'\s+', ' ', t)
         return t.strip()
-
-    def _warm_up_model(self):
-        # First pass is slow, so do a dummy classification to warm up
-        self.classifier("test", ["test"])
