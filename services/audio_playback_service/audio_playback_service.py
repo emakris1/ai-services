@@ -94,35 +94,38 @@ class AudioPlaybackService(RmqService):
 
     async def process_audio_playback(self):
         async for message in self.audio_playback_generator():
-            shaped_buffer = message.samples
-
-            # if the audio capture has multiple channels, we need to average down to one channel
-            if message.channels > 1:
-                LOGGER.debug('Audio has %d channels, averaging down to mono.', message.channels)
-                # average samples across channel axis
-                mono_buffer = shaped_buffer.mean(axis=1, dtype=self.dtype)
-            else:
-                mono_buffer = shaped_buffer
-
-            # if the audio capture has a sample rate other than the output audio device sample rate,
-            # we need to resample to the output audio device sample rate
-            if message.sample_rate != self.sample_rate:
-                LOGGER.debug('Audio has %dkHz sample rate, resampling to %dkHz.',
-                             message.sample_rate/1000, self.sample_rate/1000)
-                resampled_buffer = resampy.resample(x=mono_buffer, sr_orig=message.sample_rate, sr_new=self.sample_rate)
-            else:
-                resampled_buffer = mono_buffer
-
-            # Expand mono to stereo for a better playback experience
-            stereo_buffer = np.column_stack((resampled_buffer, resampled_buffer)).astype(self.dtype, copy=False)
-
-            self.mutex.acquire()
-            self.output_stream_buffer = np.concatenate((self.output_stream_buffer, stereo_buffer))
-            self.mutex.release()
+            self.append_samples(message)
 
     async def audio_playback_generator(self):
         while True:
             yield await self.audio_playback_queue.get()
+
+    def append_samples(self, message: AudioMessage):
+        shaped_buffer = message.samples
+
+        # if the audio capture has multiple channels, we need to average down to one channel
+        if message.channels > 1:
+            LOGGER.debug('Audio has %d channels, averaging down to mono.', message.channels)
+            # average samples across channel axis
+            mono_buffer = shaped_buffer.mean(axis=1, dtype=self.dtype)
+        else:
+            mono_buffer = shaped_buffer
+
+        # if the audio capture has a sample rate other than the output audio device sample rate,
+        # we need to resample to the output audio device sample rate
+        if message.sample_rate != self.sample_rate:
+            LOGGER.debug('Audio has %dkHz sample rate, resampling to %dkHz.',
+                         message.sample_rate/1000, self.sample_rate/1000)
+            resampled_buffer = resampy.resample(x=mono_buffer, sr_orig=message.sample_rate, sr_new=self.sample_rate)
+        else:
+            resampled_buffer = mono_buffer
+
+        # Expand mono to stereo for a better playback experience
+        stereo_buffer = np.column_stack((resampled_buffer, resampled_buffer)).astype(self.dtype, copy=False)
+
+        self.mutex.acquire()
+        self.output_stream_buffer = np.concatenate((self.output_stream_buffer, stereo_buffer))
+        self.mutex.release()
 
     async def play_output_stream(self):
         stop_event = asyncio.Event()
