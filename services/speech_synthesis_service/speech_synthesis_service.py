@@ -7,12 +7,11 @@ from pika.exchange_type import ExchangeType
 import cgt_ai_core.tts_enums as tts
 
 from cgt_ai_core.log_config import LOG_FORMAT
-from cgt_ai_core.messages import TTSRequestMessage, TTSResponseMessage
+from cgt_ai_core.messages import TTSRequestMessage, AudioMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.rmq_service import RmqService
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -27,7 +26,8 @@ class SpeechSynthesisService(RmqService):
 
         self.tts_request_queue: asyncio.Queue[TTSRequestMessage] = asyncio.Queue()
 
-        self.sample_rate: int = 24000 # Kokoro always returns 24kHz audio
+        self.channels: int = 1 # Kokoro only returns mono audio
+        self.sample_rate: int = 24000 # Kokoro only returns 24kHz audio
 
         self.tts_request_consumer: RmqConsumer | None = None
         self.add_consumer(
@@ -41,13 +41,13 @@ class SpeechSynthesisService(RmqService):
             )
         )
 
-        self.tts_response_producer: RmqProducer | None = None
+        self.audio_playback_producer: RmqProducer | None = None
         self.add_producer(
             RmqProducer(
                 connection_params=self.connection_params,
-                exchange_name='tts_response',
+                exchange_name='audio_playback',
                 exchange_type=ExchangeType.direct,
-                on_producer_ready_callback=self.on_tts_response_producer_ready
+                on_producer_ready_callback=self.on_audio_playback_producer_ready
             )
         )
 
@@ -64,10 +64,15 @@ class SpeechSynthesisService(RmqService):
         self.tts_request_consumer = consumer
 
     def on_tts_request_message(self, _unused_consumer: RmqConsumer, message: TTSRequestMessage):
-        self.tts_request_queue.put_nowait(message)
+        try:
+            self.tts_request_queue.put_nowait(message)
+        except asyncio.QueueFull:
+            LOGGER.warning('TTS request queue is full. Discarding TTS request message.')
+        except asyncio.QueueShutDown:
+            LOGGER.warning('TTS request queue is shut down. Discarding TTS request message.')
 
-    def on_tts_response_producer_ready(self, producer: RmqProducer):
-        self.tts_response_producer = producer
+    def on_audio_playback_producer_ready(self, producer: RmqProducer):
+        self.audio_playback_producer = producer
         asyncio.create_task(self.process_tts_requests())
 
     async def process_tts_requests(self):
@@ -83,12 +88,12 @@ class SpeechSynthesisService(RmqService):
 
             generator = self.pipelines[tts_req_msg.language](tts_req_msg.text, voice=tts_req_msg.voice.value)
             for i, (graphemes, phonemes, speech_tensor) in enumerate(generator):
-                tts_resp_msg = TTSResponseMessage(
+                audio_msg = AudioMessage(
                     sample_rate=self.sample_rate,
-                    speech=speech_tensor.detach().cpu().numpy().tobytes()
+                    samples=speech_tensor.detach().cpu().numpy()
                 )
-                LOGGER.info('Publishing TTS response message.')
-                self.tts_response_producer.publish_message(tts_resp_msg)
+                LOGGER.info('Publishing audio playback message.')
+                self.audio_playback_producer.publish_message(audio_msg)
 
     async def tts_request_generator(self):
         while True:

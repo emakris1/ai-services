@@ -7,7 +7,6 @@ from pika.channel import Channel
 from pika.exchange_type import ExchangeType
 from pika.frame import Method
 
-
 LOGGER = logging.getLogger(__name__)
 
 

@@ -7,16 +7,14 @@ import torch
 
 from faster_whisper import WhisperModel
 from faster_whisper.transcribe import Segment, TranscriptionInfo
-
 from pika.exchange_type import ExchangeType
 
 from cgt_ai_core.log_config import LOG_FORMAT
-from cgt_ai_core.messages import AudioCaptureMessage, SpeechRecognitionMessage
+from cgt_ai_core.messages import AudioMessage, SpeechRecognitionMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.rmq_service import RmqService
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -29,7 +27,7 @@ class SpeechRecognitionService(RmqService):
                  password: str = None):
         super().__init__(host, port, username, password)
 
-        self.audio_capture_queue: asyncio.Queue[AudioCaptureMessage] = asyncio.Queue()
+        self.audio_capture_queue: asyncio.Queue[AudioMessage] = asyncio.Queue()
 
         self.dtype: np.dtype[np.float32] = np.float32
         self.sample_rate: int = 16000 # most ASR libraries expect 16kHz audio
@@ -46,7 +44,7 @@ class SpeechRecognitionService(RmqService):
         self.audio_capture_consumer: RmqConsumer | None = None
         self.add_consumer(
             RmqConsumer(
-                message_type=AudioCaptureMessage,
+                message_type=AudioMessage,
                 connection_params=self.connection_params,
                 exchange_name='audio_capture',
                 exchange_type=ExchangeType.direct,
@@ -77,8 +75,13 @@ class SpeechRecognitionService(RmqService):
     def on_audio_capture_consumer_ready(self, consumer: RmqConsumer):
         self.audio_capture_consumer = consumer
 
-    def on_audio_capture_message(self, _unused_consumer: RmqConsumer, message: AudioCaptureMessage):
-        self.audio_capture_queue.put_nowait(message)
+    def on_audio_capture_message(self, _unused_consumer: RmqConsumer, message: AudioMessage):
+        try:
+            self.audio_capture_queue.put_nowait(message)
+        except asyncio.QueueFull:
+            LOGGER.warning('Audio capture queue is full. Discarding audio message.')
+        except asyncio.QueueShutDown:
+            LOGGER.warning('Audio capture queue is shut down. Discarding audio message.')
 
     def on_speech_recognition_producer_ready(self, producer: RmqProducer):
         self.speech_recognition_producer = producer
@@ -96,26 +99,23 @@ class SpeechRecognitionService(RmqService):
         while True:
             yield await self.audio_capture_queue.get()
 
-    def append_samples(self, message: AudioCaptureMessage):
-        # convert raw bytes to a numpy array
-        flat_buffer = np.frombuffer(buffer=message.samples, dtype=self.dtype)
+    def append_samples(self, message: AudioMessage):
+        shaped_buffer = message.samples
 
         # if the audio capture has multiple channels, we need to average down to one channel
         # most ASR libraries including silero and whisper expect mono 16kHz audio
-        if message.channels > 1:
-            LOGGER.debug('Audio capture has %d channels, averaging down to mono.', message.channels)
-            # reshape the array to match the number of audio channels
-            frames = flat_buffer.size // message.channels
-            shaped_buffer = flat_buffer.reshape(frames, message.channels)
+        if shaped_buffer.ndim > 1:
+            LOGGER.debug('Audio has %d channels, averaging down to mono.', shaped_buffer.ndim)
             # average samples across channel axis
             mono_buffer = shaped_buffer.mean(axis=1, dtype=self.dtype)
         else:
-            mono_buffer = flat_buffer
+            mono_buffer = shaped_buffer.flatten()
 
         # if the audio capture has a sample rate other than 16kHz, we need to resample to 16kHz
         # most ASR libraries including silero and whisper expect mono 16kHz audio
         if message.sample_rate != self.sample_rate:
-            LOGGER.debug('Audio capture has %d sample rate, resampling to 16kHz.', message.sample_rate)
+            LOGGER.debug('Audio has %dkHz sample rate, resampling to %dkHz.',
+                         message.sample_rate/1000, self.sample_rate/1000)
             resampled_buffer = resampy.resample(x=mono_buffer, sr_orig=message.sample_rate, sr_new=self.sample_rate)
         else:
             resampled_buffer = mono_buffer

@@ -1,7 +1,6 @@
 from pika import ConnectionParameters
 from pika.credentials import PlainCredentials
 
-
 DefaultHost = 'localhost'
 DefaultPort = 5672
 DefaultUsername = 'guest'

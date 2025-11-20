@@ -12,9 +12,9 @@ from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.rmq_service import RmqService
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
 
-from action_cross_encoder import ActionCrossEncoder
 import messages as m
 
+from action_cross_encoder import ActionCrossEncoder
 
 LOGGER = logging.getLogger(__name__)
 
@@ -92,7 +92,12 @@ class ActorCommandsService(RmqService):
         self.speech_queue: asyncio.Queue[SpeechRecognitionMessage] = asyncio.Queue()
 
     def on_receive_speech_recognition(self, _, message: SpeechRecognitionMessage):
-        self.speech_queue.put_nowait(message)
+        try:
+            self.speech_queue.put_nowait(message)
+        except asyncio.QueueFull:
+            LOGGER.warning('Speech recognition queue is full. Discarding speech recognition message.')
+        except asyncio.QueueShutDown:
+            LOGGER.warning('Speech recognition queue is shut down. Discarding speech recognition message.')
 
     def on_receive_command_config(self, _, message: m.CommandConfigMessage):
         for ac in message.commands:
@@ -130,7 +135,7 @@ class ActorCommandsService(RmqService):
 
             tts_req_msg = TTSRequestMessage(
                 language=tts.Language.AMERICAN_ENGLISH,
-                voice=tts.Voice.AMERICAN_MALE_FENRIR,
+                voice=tts.Voice.AMERICAN_MALE_ONYX,
                 text=reply
             )
             LOGGER.info('Publishing TTS request message:\n\t%s', tts_req_msg)

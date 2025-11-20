@@ -1,17 +1,16 @@
 import logging
 import msgspec
 
-from typing import Callable, Generic, Type, TypeVar
-
 from pika import ConnectionParameters
 from pika.channel import Channel
 from pika.exchange_type import ExchangeType
 from pika.frame import Method
 from pika.spec import BasicProperties
 from pika.spec import Basic
+from typing import Callable, Generic, Type, TypeVar
 
+from cgt_ai_core.messages import dec_hook
 from cgt_ai_core.rmq_base import RmqBase
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -41,8 +40,7 @@ class RmqConsumer(RmqBase, Generic[T]):
         self.prefetch_count = 0
         self.prefetch_size = 0
 
-        self.decoder = msgspec.json.Decoder(type=self.message_type)
-
+        self.decoder = msgspec.json.Decoder(type=self.message_type, dec_hook=dec_hook)
 
     def post_exchange_declare(self):
         self.declare_queue()
@@ -53,15 +51,15 @@ class RmqConsumer(RmqBase, Generic[T]):
 
     def on_queue_declare_ok(self, method_frame: Method):
         assigned_queue_name = method_frame.method.queue
-        LOGGER.debug('Queue "%s" declared!', assigned_queue_name)
         # Update self.queue_name if it was assigned anonymously
         if not self.queue_name:
             self.queue_name = assigned_queue_name
+        LOGGER.debug('Queue "%s" declared!', self.queue_name)
         self.bind_queue()
 
     def bind_queue(self):
         LOGGER.debug('Binding queue "%s" to exchange "%s" with routing key "%s"...',
-                     self.queue_name, self.exchange_name, self.routing_key)
+                     self.queue_name, self.exchange_name, self.routing_key or 'default')
         self.channel.queue_bind(
             queue=self.queue_name,
             exchange=self.exchange_name,
@@ -70,6 +68,8 @@ class RmqConsumer(RmqBase, Generic[T]):
         )
 
     def on_queue_bind_ok(self, _unused_method_frame: Method):
+        if not self.routing_key:
+            self.routing_key = 'default'
         LOGGER.debug('Queue "%s" successfully bound to exchange "%s" with routing key "%s"!',
                      self.queue_name, self.exchange_name, self.routing_key)
         self.set_qos()
@@ -90,10 +90,15 @@ class RmqConsumer(RmqBase, Generic[T]):
 
     def start_consuming(self):
         LOGGER.debug('Starting message consumption...')
-        self.channel.add_on_cancel_callback(self.on_consumer_cancelled)
-        self.consumer_tag = self.channel.basic_consume(queue=self.queue_name, on_message_callback=self.on_message)
 
-        LOGGER.info('Consumer is ready to consume messages!')
+        self.channel.add_on_cancel_callback(self.on_consumer_cancelled)
+        self.consumer_tag = self.channel.basic_consume(
+            queue=self.queue_name,
+            on_message_callback=self.on_message,
+            consumer_tag=f'{self.exchange_name}:{self.routing_key}:{self.queue_name}'
+        )
+
+        LOGGER.info('Consumer %s is ready to consume messages!', self.consumer_tag)
         self.on_consumer_ready_callback(self)
 
     def on_consumer_cancelled(self, method_frame: Method):
