@@ -16,6 +16,10 @@ class ActionCrossEncoder:
     def add_action_reply(self, actor: Actor, command: Command):
         if actor not in self.actions:
             self.actions[actor] = {}
+        for label, (action, _) in self.actions[actor].items():
+            if command.action == action:
+                del self.actions[actor][label]
+                break
         self.actions[actor][self._clean_text(command.label)] = (command.action, command.reply)
 
     def classify(self, actor: Actor, phrase: str, language: str = 'en') -> tuple[tuple[Action, str], float]:
@@ -28,15 +32,16 @@ class ActionCrossEncoder:
         top_score = inference['scores'][0]
         return self.actions[actor][top_label], top_score
 
+    def _warm_up_model(self):
+        # First pass is slow, so do a dummy classification to warm up
+        self.classifier("test", ["test"])
+
     def __len__(self):
         return sum(len(actions) for actions in self.actions.values())
 
-    def _clean_text(self, text: str) -> str:
+    @staticmethod
+    def _clean_text(text: str) -> str:
         t = text.lower()
         t = t.translate(str.maketrans('', '', string.punctuation))
         t = re.sub(r'\s+', ' ', t)
         return t.strip()
-
-    def _warm_up_model(self):
-        # First pass is slow, so do a dummy classification to warm up
-        self.classifier("test", ["test"])

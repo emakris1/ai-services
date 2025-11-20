@@ -90,6 +90,7 @@ class ActorCommandsService(RmqService):
 
         self.ace = ActionCrossEncoder()
         self.speech_queue: asyncio.Queue[SpeechRecognitionMessage] = asyncio.Queue()
+        self.voice_map: dict[m.Actor, int] = {}
 
     def on_receive_speech_recognition(self, _, message: SpeechRecognitionMessage):
         try:
@@ -101,6 +102,7 @@ class ActorCommandsService(RmqService):
 
     def on_receive_command_config(self, _, message: m.CommandConfigMessage):
         for ac in message.commands:
+            self.voice_map[ac.actor] = ac.voice
             for command in ac.commands:
                 self.ace.add_action_reply(ac.actor, command)
         LOGGER.info("Loaded %d actions into action command encoder", len(self.ace))
@@ -135,7 +137,7 @@ class ActorCommandsService(RmqService):
 
             tts_req_msg = TTSRequestMessage(
                 language=tts.Language.AMERICAN_ENGLISH,
-                voice=tts.Voice.AMERICAN_MALE_ONYX,
+                voice=self.get_current_voice(),
                 text=reply
             )
             LOGGER.info('Publishing TTS request message:\n\t%s', tts_req_msg)
@@ -148,6 +150,11 @@ class ActorCommandsService(RmqService):
                 self.speech_queue.get_nowait()
             except asyncio.QueueEmpty:
                 queue_empty = True
+
+    def get_current_voice(self) -> tts.Voice:
+        voice_index = self.voice_map[self.current_ai_actor]
+        voices = list(tts.Voice)
+        return voices[0] if voice_index >= len(voices) else voices[voice_index]
 
 
 async def main():

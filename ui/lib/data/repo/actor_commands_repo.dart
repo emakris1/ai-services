@@ -46,6 +46,7 @@ class ActorCommandsRepo {
       'commands': config.commands.map((actorCmds) {
         return {
           'actor': actorCmds.actor.index,
+          'voice': actorCmds.voice.index,
           'commands': actorCmds.commands.map((cmd) {
             return {
               'action': cmd.action.index,
@@ -65,6 +66,7 @@ class ActorCommandsRepo {
           .map(
             (actorCmds) => ActorCommands(
               actor: Actor.values[actorCmds['actor'] as int],
+              voice: Voice.values[actorCmds['voice'] as int],
               commands: (actorCmds['commands'] as List)
                   .map(
                     (cmd) => Command(
