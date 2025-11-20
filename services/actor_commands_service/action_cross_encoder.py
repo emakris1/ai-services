@@ -16,14 +16,14 @@ class ActionCrossEncoder:
     def add_action_reply(self, actor: Actor, command: Command):
         if actor not in self.actions:
             self.actions[actor] = {}
-        self.actions[actor][command.label] = (command.action, command.reply)
+        self.actions[actor][self._clean_text(command.label)] = (command.action, command.reply)
 
     def classify(self, actor: Actor, phrase: str, language: str = 'en') -> tuple[tuple[Action, str], float]:
         if language != 'en' or actor not in self.actions:
             return (Action.UNKNOWN, ''), -1.0
-        phrases = list(self.actions[actor].keys())
+        cleaned_labels = [self._clean_text(label) for label in list(self.actions[actor].keys())]
         cleaned_phrase = self._clean_text(phrase)
-        inference = self.classifier(cleaned_phrase, phrases)
+        inference = self.classifier(cleaned_phrase, cleaned_labels)
         top_label = inference['labels'][0]
         top_score = inference['scores'][0]
         return self.actions[actor][top_label], top_score
