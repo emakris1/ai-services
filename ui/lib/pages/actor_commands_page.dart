@@ -41,7 +41,7 @@ class ActorCommandsPage extends StatelessWidget {
             children: [
               Expanded(
                 flex: 1,
-                child: ActionsList(
+                child: LeftPanel(
                   actions: actions,
                   selectedAction: selectedAction,
                   background: background,
@@ -49,6 +49,7 @@ class ActorCommandsPage extends StatelessWidget {
                   textColor: textColor,
                 ),
               ),
+
               const SizedBox(width: 16),
               Expanded(
                 flex: 2,
@@ -65,6 +66,122 @@ class ActorCommandsPage extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class LeftPanel extends StatefulWidget {
+  final Iterable<Action> actions;
+  final Action? selectedAction;
+  final Color background;
+  final Color selectedColor;
+  final Color textColor;
+
+  const LeftPanel({
+    super.key,
+    required this.actions,
+    required this.selectedAction,
+    required this.background,
+    required this.selectedColor,
+    required this.textColor,
+  });
+
+  @override
+  State<LeftPanel> createState() => _LeftPanelState();
+}
+
+class _LeftPanelState extends State<LeftPanel> {
+  String selectedOption = "Option A";
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        ActorDropdown(
+          background: widget.background,
+          selectedColor: widget.selectedColor,
+          value: selectedOption,
+          onChanged: (value) {
+            setState(() => selectedOption = value);
+          },
+        ),
+
+        const SizedBox(height: 16),
+
+        Expanded(
+          child: ActionsList(
+            actions: widget.actions,
+            selectedAction: widget.selectedAction,
+            background: widget.background,
+            selectedColor: widget.selectedColor,
+            textColor: widget.textColor,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class ActorDropdown extends StatelessWidget {
+  final Color background;
+  final Color selectedColor;
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  const ActorDropdown({
+    super.key,
+    required this.background,
+    required this.selectedColor,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dropdownData = ["Option A", "Option B", "Option C"];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: selectedColor.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: DropdownButton<String>(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          icon: const Icon(Icons.arrow_drop_down_rounded),
+          value: value,
+          isExpanded: true,
+          underline: Container(),
+          onChanged: (v) {
+            if (v != null) onChanged(v);
+          },
+          items: dropdownData.map((item) {
+            return DropdownMenuItem(
+              value: item,
+              child: Text(item), // menu items unchanged
+            );
+          }).toList(),
+          selectedItemBuilder: (context) {
+            return dropdownData.map((item) {
+              return Row(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: const Icon(Icons.groups_3_rounded, size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(item),
+                ],
+              );
+            }).toList();
+          },
+        ),
+      ),
     );
   }
 }
