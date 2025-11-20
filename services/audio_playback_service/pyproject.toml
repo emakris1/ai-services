@@ -1,7 +1,7 @@
 [project]
 name = "cgt-ai-audio-playback-service"
 version = "0.1.0"
-description = "Consumes audio samples, optionally applies sound effects, and plays them out on the desired audio output device"
+description = "Consumes audio samples and plays them out on the desired audio output device"
 requires-python = ">=3.13"
 dependencies = [
     "cgt-ai-core",
