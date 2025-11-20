@@ -87,7 +87,7 @@ class SpeechSynthesisService(RmqService):
                 audio_msg = AudioMessage(
                     channels=self.channels,
                     sample_rate=self.sample_rate,
-                    samples=speech_tensor.detach().cpu().numpy().tobytes()
+                    samples=speech_tensor.detach().cpu().numpy()
                 )
                 LOGGER.info('Publishing audio playback message.')
                 self.audio_playback_producer.publish_message(audio_msg)

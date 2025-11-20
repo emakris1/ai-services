@@ -89,7 +89,7 @@ class AudioCaptureService(RmqService):
             message = AudioMessage(
                 channels=self.channels,
                 sample_rate=self.sample_rate,
-                samples=input_stream_data.tobytes()
+                samples=input_stream_data
             )
             LOGGER.info('Publishing audio capture message with %d samples.', input_stream_data.size)
             self.audio_capture_producer.publish_message(message)

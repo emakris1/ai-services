@@ -97,20 +97,16 @@ class SpeechRecognitionService(RmqService):
             yield await self.audio_capture_queue.get()
 
     def append_samples(self, message: AudioMessage):
-        # convert raw bytes to a numpy array
-        flat_buffer = np.frombuffer(buffer=message.samples, dtype=self.dtype)
+        shaped_buffer = message.samples
 
         # if the audio capture has multiple channels, we need to average down to one channel
         # most ASR libraries including silero and whisper expect mono 16kHz audio
         if message.channels > 1:
             LOGGER.debug('Audio has %d channels, averaging down to mono.', message.channels)
-            # reshape the array to match the number of audio channels
-            frames = flat_buffer.size // message.channels
-            shaped_buffer = flat_buffer.reshape(frames, message.channels)
             # average samples across channel axis
             mono_buffer = shaped_buffer.mean(axis=1, dtype=self.dtype)
         else:
-            mono_buffer = flat_buffer
+            mono_buffer = shaped_buffer
 
         # if the audio capture has a sample rate other than 16kHz, we need to resample to 16kHz
         # most ASR libraries including silero and whisper expect mono 16kHz audio

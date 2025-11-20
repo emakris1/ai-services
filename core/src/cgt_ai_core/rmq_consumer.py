@@ -10,6 +10,7 @@ from pika.frame import Method
 from pika.spec import BasicProperties
 from pika.spec import Basic
 
+from cgt_ai_core.messages import dec_hook
 from cgt_ai_core.rmq_base import RmqBase
 
 
@@ -41,8 +42,7 @@ class RmqConsumer(RmqBase, Generic[T]):
         self.prefetch_count = 0
         self.prefetch_size = 0
 
-        self.decoder = msgspec.json.Decoder(type=self.message_type)
-
+        self.decoder = msgspec.json.Decoder(type=self.message_type, dec_hook=dec_hook)
 
     def post_exchange_declare(self):
         self.declare_queue()

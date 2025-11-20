@@ -8,6 +8,7 @@ from pika.exchange_type import ExchangeType
 from pika.frame import Method
 from pika.spec import BasicProperties
 
+from cgt_ai_core.messages import enc_hook
 from cgt_ai_core.rmq_base import RmqBase
 
 
@@ -34,7 +35,7 @@ class RmqProducer(RmqBase, Generic[T]):
         self.nacked = None
         self.message_number = None
 
-        self.encoder = msgspec.json.Encoder()
+        self.encoder = msgspec.json.Encoder(enc_hook=enc_hook)
 
     def post_exchange_declare(self):
         self.enable_delivery_confirmations()
