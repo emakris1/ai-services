@@ -85,7 +85,6 @@ class AudioCaptureService(RmqService):
     async def sample_input_stream(self):
         async for input_stream_data in self.input_stream_generator():
             message = AudioMessage(
-                channels=self.channels,
                 sample_rate=self.sample_rate,
                 samples=input_stream_data
             )

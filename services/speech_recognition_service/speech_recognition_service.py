@@ -104,8 +104,8 @@ class SpeechRecognitionService(RmqService):
 
         # if the audio capture has multiple channels, we need to average down to one channel
         # most ASR libraries including silero and whisper expect mono 16kHz audio
-        if message.channels > 1:
-            LOGGER.debug('Audio has %d channels, averaging down to mono.', message.channels)
+        if shaped_buffer.ndim > 1:
+            LOGGER.debug('Audio has %d channels, averaging down to mono.', shaped_buffer.ndim)
             # average samples across channel axis
             mono_buffer = shaped_buffer.mean(axis=1, dtype=self.dtype)
         else:

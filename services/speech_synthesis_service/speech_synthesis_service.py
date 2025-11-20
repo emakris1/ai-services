@@ -89,7 +89,6 @@ class SpeechSynthesisService(RmqService):
             generator = self.pipelines[tts_req_msg.language](tts_req_msg.text, voice=tts_req_msg.voice.value)
             for i, (graphemes, phonemes, speech_tensor) in enumerate(generator):
                 audio_msg = AudioMessage(
-                    channels=self.channels,
                     sample_rate=self.sample_rate,
                     samples=speech_tensor.detach().cpu().numpy()
                 )
