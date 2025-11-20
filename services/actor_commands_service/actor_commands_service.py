@@ -12,9 +12,9 @@ from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.rmq_service import RmqService
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
 
-from action_cross_encoder import ActionCrossEncoder
 import messages as m
 
+from action_cross_encoder import ActionCrossEncoder
 
 LOGGER = logging.getLogger(__name__)
 

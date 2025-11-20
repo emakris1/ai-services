@@ -1,16 +1,14 @@
 import logging
 import msgspec
 
-from typing import Callable, Generic, TypeVar
-
 from pika import ConnectionParameters
 from pika.exchange_type import ExchangeType
 from pika.frame import Method
 from pika.spec import BasicProperties
+from typing import Callable, Generic, TypeVar
 
 from cgt_ai_core.messages import enc_hook
 from cgt_ai_core.rmq_base import RmqBase
-
 
 LOGGER = logging.getLogger(__name__)
 

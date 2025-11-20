@@ -1,7 +1,8 @@
 import re
 import string
-from transformers import pipeline
+
 from messages import Actor, Action, Command
+from transformers import pipeline
 
 
 class ActionCrossEncoder:

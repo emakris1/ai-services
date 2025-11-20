@@ -1,5 +1,5 @@
-import msgspec
 import enum
+import msgspec
 
 
 class Actor(enum.Enum):
