@@ -85,7 +85,12 @@ class AudioPlaybackService(RmqService):
         asyncio.gather(self.process_audio_playback(), self.play_output_stream())
 
     def on_audio_playback_message(self, _unused_consumer: RmqConsumer, message: AudioMessage):
-        self.audio_playback_queue.put_nowait(message)
+        try:
+            self.audio_playback_queue.put_nowait(message)
+        except asyncio.QueueFull:
+            LOGGER.warning('Audio playback queue is full. Discarding audio message.')
+        except asyncio.QueueShutDown:
+            LOGGER.warning('Audio playback queue is shut down. Discarding audio message.')
 
     async def process_audio_playback(self):
         async for message in self.audio_playback_generator():

@@ -64,7 +64,12 @@ class SpeechSynthesisService(RmqService):
         self.tts_request_consumer = consumer
 
     def on_tts_request_message(self, _unused_consumer: RmqConsumer, message: TTSRequestMessage):
-        self.tts_request_queue.put_nowait(message)
+        try:
+            self.tts_request_queue.put_nowait(message)
+        except asyncio.QueueFull:
+            LOGGER.warning('TTS request queue is full. Discarding TTS request message.')
+        except asyncio.QueueShutDown:
+            LOGGER.warning('TTS request queue is shut down. Discarding TTS request message.')
 
     def on_audio_playback_producer_ready(self, producer: RmqProducer):
         self.audio_playback_producer = producer

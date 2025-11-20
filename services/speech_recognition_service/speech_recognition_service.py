@@ -76,7 +76,12 @@ class SpeechRecognitionService(RmqService):
         self.audio_capture_consumer = consumer
 
     def on_audio_capture_message(self, _unused_consumer: RmqConsumer, message: AudioMessage):
-        self.audio_capture_queue.put_nowait(message)
+        try:
+            self.audio_capture_queue.put_nowait(message)
+        except asyncio.QueueFull:
+            LOGGER.warning('Audio capture queue is full. Discarding audio message.')
+        except asyncio.QueueShutDown:
+            LOGGER.warning('Audio capture queue is shut down. Discarding audio message.')
 
     def on_speech_recognition_producer_ready(self, producer: RmqProducer):
         self.speech_recognition_producer = producer

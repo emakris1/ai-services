@@ -92,7 +92,12 @@ class ActorCommandsService(RmqService):
         self.speech_queue: asyncio.Queue[SpeechRecognitionMessage] = asyncio.Queue()
 
     def on_receive_speech_recognition(self, _, message: SpeechRecognitionMessage):
-        self.speech_queue.put_nowait(message)
+        try:
+            self.speech_queue.put_nowait(message)
+        except asyncio.QueueFull:
+            LOGGER.warning('Speech recognition queue is full. Discarding speech recognition message.')
+        except asyncio.QueueShutDown:
+            LOGGER.warning('Speech recognition queue is shut down. Discarding speech recognition message.')
 
     def on_receive_command_config(self, _, message: m.CommandConfigMessage):
         for ac in message.commands:

@@ -101,10 +101,10 @@ class AudioCaptureService(RmqService):
             LOGGER.debug('Received %d frames of input stream data.', frames)
             try:
                 loop.call_soon_threadsafe(q_in.put_nowait, indata.copy())
-            except asyncio.QueueFull as exc:
-                LOGGER.exception('Input stream queue is full. Discarding input stream data.', exc_info=exc)
-            except asyncio.QueueShutDown as exc:
-                LOGGER.exception('Input stream queue shut down. Discarding input stream data.', exc_info=exc)
+            except asyncio.QueueFull:
+                LOGGER.warning('Input stream queue is full. Discarding input stream data.')
+            except asyncio.QueueShutDown:
+                LOGGER.warning('Input stream queue is shut down. Discarding input stream data.')
 
         input_stream = sd.InputStream(
             device=self.device_index,
