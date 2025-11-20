@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import numpy as np
-import queue
 import resampy
 import sounddevice as sd
 import threading
