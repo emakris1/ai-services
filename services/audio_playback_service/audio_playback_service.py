@@ -109,7 +109,7 @@ class AudioPlaybackService(RmqService):
             # average samples across channel axis
             mono_buffer = shaped_buffer.mean(axis=1, dtype=self.dtype)
         else:
-            mono_buffer = shaped_buffer
+            mono_buffer = shaped_buffer.flatten()
 
         # if the audio capture has a sample rate other than the output audio device sample rate,
         # we need to resample to the output audio device sample rate
