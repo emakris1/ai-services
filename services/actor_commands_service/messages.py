@@ -27,6 +27,7 @@ class Command(msgspec.Struct):
 
 class ActorCommands(msgspec.Struct):
     actor: Actor
+    voice: int
     commands: list[Command]
 
 
