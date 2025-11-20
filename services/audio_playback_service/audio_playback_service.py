@@ -140,11 +140,11 @@ class AudioPlaybackService(RmqService):
             frames_available = self.output_stream_buffer.shape[0]
 
             if frames_available >= frames_needed:
-                LOGGER.debug('Output stream buffer has all frames available - full fill')
+                LOGGER.info('Output stream buffer has all frames available - full fill')
                 outdata[:, :] = self.output_stream_buffer[:frames_needed, :]
                 self.output_stream_buffer = self.output_stream_buffer[frames_needed:, :]
             elif frames_available > 0:
-                LOGGER.debug('Output stream buffer has some frames available - partial fill')
+                LOGGER.info('Output stream buffer has some frames available - partial fill')
                 outdata[:frames_available, :] = self.output_stream_buffer[:frames_available, :]
                 outdata[frames_available:, :] = 0
                 self.output_stream_buffer = self.output_stream_buffer[:0, :]
