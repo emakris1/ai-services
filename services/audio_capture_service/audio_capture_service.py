@@ -3,16 +3,14 @@ import logging
 import numpy as np
 import sounddevice as sd
 
+from pika.exchange_type import ExchangeType
 from typing import Any
 
-from pika.exchange_type import ExchangeType
-
 from cgt_ai_core.log_config import LOG_FORMAT
-from cgt_ai_core.messages import AudioCaptureMessage
+from cgt_ai_core.messages import AudioMessage
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.rmq_service import RmqService
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -86,10 +84,9 @@ class AudioCaptureService(RmqService):
 
     async def sample_input_stream(self):
         async for input_stream_data in self.input_stream_generator():
-            message = AudioCaptureMessage(
-                channels=self.channels,
+            message = AudioMessage(
                 sample_rate=self.sample_rate,
-                samples=input_stream_data.tobytes()
+                samples=input_stream_data
             )
             LOGGER.info('Publishing audio capture message with %d samples.', input_stream_data.size)
             self.audio_capture_producer.publish_message(message)
@@ -103,10 +100,10 @@ class AudioCaptureService(RmqService):
             LOGGER.debug('Received %d frames of input stream data.', frames)
             try:
                 loop.call_soon_threadsafe(q_in.put_nowait, indata.copy())
-            except asyncio.QueueFull as exc:
-                LOGGER.exception('Input stream queue is full. Discarding input stream data.', exc_info=exc)
-            except asyncio.QueueShutDown as exc:
-                LOGGER.exception('Input stream queue shut down. Discarding input stream data.', exc_info=exc)
+            except asyncio.QueueFull:
+                LOGGER.warning('Input stream queue is full. Discarding input stream data.')
+            except asyncio.QueueShutDown:
+                LOGGER.warning('Input stream queue is shut down. Discarding input stream data.')
 
         input_stream = sd.InputStream(
             device=self.device_index,

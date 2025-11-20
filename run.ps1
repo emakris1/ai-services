@@ -4,11 +4,11 @@ param
     [string]$Shell
 )
 
-$splatParams = @{}
+$RunParams = @{}
 if ($Shell)
 {
-    $splatParams['Shell'] = $Shell
+    $RunParams['Shell'] = $Shell
 }
 
-& $PSScriptRoot\services\uv-run-services.ps1 @splatParams
+& $PSScriptRoot\services\uv-run-services.ps1 @RunParams
 & $PSScriptRoot\ui\run-ui.ps1

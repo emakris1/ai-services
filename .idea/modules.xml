@@ -5,6 +5,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/CGT-AI.iml" filepath="$PROJECT_DIR$/.idea/CGT-AI.iml" />
       <module fileurl="file://$PROJECT_DIR$/services/actor_commands_service/.idea/actor_commands_service.iml" filepath="$PROJECT_DIR$/services/actor_commands_service/.idea/actor_commands_service.iml" />
       <module fileurl="file://$PROJECT_DIR$/services/audio_capture_service/.idea/audio_capture_service.iml" filepath="$PROJECT_DIR$/services/audio_capture_service/.idea/audio_capture_service.iml" />
+      <module fileurl="file://$PROJECT_DIR$/services/audio_playback_service/.idea/audio_playback_service.iml" filepath="$PROJECT_DIR$/services/audio_playback_service/.idea/audio_playback_service.iml" />
       <module fileurl="file://$PROJECT_DIR$/core/.idea/core.iml" filepath="$PROJECT_DIR$/core/.idea/core.iml" />
       <module fileurl="file://$PROJECT_DIR$/services/speech_recognition_service/.idea/speech_recognition_service.iml" filepath="$PROJECT_DIR$/services/speech_recognition_service/.idea/speech_recognition_service.iml" />
       <module fileurl="file://$PROJECT_DIR$/services/speech_synthesis_service/.idea/speech_synthesis_service.iml" filepath="$PROJECT_DIR$/services/speech_synthesis_service/.idea/speech_synthesis_service.iml" />

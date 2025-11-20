@@ -1,15 +1,14 @@
 import logging
 import msgspec
 
-from typing import Callable, Generic, TypeVar
-
 from pika import ConnectionParameters
 from pika.exchange_type import ExchangeType
 from pika.frame import Method
 from pika.spec import BasicProperties
+from typing import Callable, Generic, TypeVar
 
+from cgt_ai_core.messages import enc_hook
 from cgt_ai_core.rmq_base import RmqBase
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -25,6 +24,8 @@ class RmqProducer(RmqBase, Generic[T]):
                  on_producer_ready_callback: Callable[['RmqProducer[T]'], None] = lambda _producer: None):
         super().__init__(connection_params, exchange_name, exchange_type, routing_key)
 
+        self.producer_tag = f'{self.exchange_name}:{self.routing_key}'
+
         self.on_producer_ready_callback = on_producer_ready_callback
 
         self.deliveries = {}
@@ -32,16 +33,16 @@ class RmqProducer(RmqBase, Generic[T]):
         self.nacked = None
         self.message_number = None
 
-        self.encoder = msgspec.json.Encoder()
+        self.encoder = msgspec.json.Encoder(enc_hook=enc_hook)
 
     def post_exchange_declare(self):
         self.enable_delivery_confirmations()
 
     def enable_delivery_confirmations(self):
-        LOGGER.debug('Enabling delivery confirmations...')
+        LOGGER.debug('Enabling delivery confirmations for producer %s...', self.producer_tag)
         self.channel.confirm_delivery(self.on_delivery_confirmation)
 
-        LOGGER.info('Producer is ready to publish messages!')
+        LOGGER.info('Producer %s is ready to publish messages!', self.producer_tag)
         self.on_producer_ready_callback(self)
 
     def on_delivery_confirmation(self, method_frame: Method):
@@ -49,8 +50,8 @@ class RmqProducer(RmqBase, Generic[T]):
         ack_multiple = method_frame.method.multiple
         delivery_tag = method_frame.method.delivery_tag
 
-        LOGGER.debug('Received %s for delivery tag: %d (multiple: %s)',
-                    confirmation_type, delivery_tag, ack_multiple)
+        LOGGER.debug('Producer %s received %s for delivery tag: %d (multiple: %s)',
+                    self.producer_tag, confirmation_type, delivery_tag, ack_multiple)
 
         if confirmation_type == 'ack':
             self.acked += 1
@@ -69,18 +70,19 @@ class RmqProducer(RmqBase, Generic[T]):
         entries and decide to attempt re-delivery
         """
 
-        LOGGER.debug('Published %d messages; %d awaiting confirmation, %d were acked, and %d were nacked',
-                     self.message_number, len(self.deliveries), self.acked, self.nacked)
+        LOGGER.debug('Producer %s published %d messages; %d awaiting confirmation, %d were acked, and %d were nacked',
+                     self.producer_tag, self.message_number, len(self.deliveries), self.acked, self.nacked)
 
     def publish_message(self, message: T):
         if self.channel is None:
-            LOGGER.warning('Channel has not yet been created! Skipping publish of message.')
+            LOGGER.warning('Channel has not yet been created for producer %s! Skipping publish of message.',
+                           self.producer_tag)
             return
         if not self.channel.is_open:
-            LOGGER.warning('Channel is not open! Skipping publish of message.')
+            LOGGER.warning('Channel is not open for producer %s! Skipping publish of message.', self.producer_tag)
             return
 
-        LOGGER.debug('Publishing message...')
+        LOGGER.debug('Producer %s publishing message...', self.producer_tag)
         self.channel.basic_publish(
             exchange=self.exchange_name,
             routing_key=self.routing_key,
