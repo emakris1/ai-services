@@ -70,7 +70,7 @@ class ActorCommandsPage extends StatelessWidget {
   }
 }
 
-class LeftPanel extends StatefulWidget {
+class LeftPanel extends StatelessWidget {
   final Iterable<Action> actions;
   final Action? selectedAction;
   final Color background;
@@ -87,34 +87,18 @@ class LeftPanel extends StatefulWidget {
   });
 
   @override
-  State<LeftPanel> createState() => _LeftPanelState();
-}
-
-class _LeftPanelState extends State<LeftPanel> {
-  String selectedOption = "Option A";
-
-  @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        ActorDropdown(
-          background: widget.background,
-          selectedColor: widget.selectedColor,
-          value: selectedOption,
-          onChanged: (value) {
-            setState(() => selectedOption = value);
-          },
-        ),
-
+        ActorDropdown(background: background, selectedColor: selectedColor),
         const SizedBox(height: 16),
-
         Expanded(
           child: ActionsList(
-            actions: widget.actions,
-            selectedAction: widget.selectedAction,
-            background: widget.background,
-            selectedColor: widget.selectedColor,
-            textColor: widget.textColor,
+            actions: actions,
+            selectedAction: selectedAction,
+            background: background,
+            selectedColor: selectedColor,
+            textColor: textColor,
           ),
         ),
       ],
@@ -125,20 +109,31 @@ class _LeftPanelState extends State<LeftPanel> {
 class ActorDropdown extends StatelessWidget {
   final Color background;
   final Color selectedColor;
-  final String value;
-  final ValueChanged<String> onChanged;
 
   const ActorDropdown({
     super.key,
     required this.background,
     required this.selectedColor,
-    required this.value,
-    required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    final dropdownData = ["Option A", "Option B", "Option C"];
+    final cubit = context.watch<ActorCommandsCubit>();
+    final state = cubit.state;
+    final selectedActor = state.selectedActor;
+
+    String selectedOption = selectedActor != null
+        ? cleanCamelCase(
+            state.config.commands
+                .firstWhere((a) => a.actor == selectedActor)
+                .voice
+                .name,
+          )
+        : cleanCamelCase(Voice.values.first.name);
+
+    final dropdownData = Voice.values
+        .map((v) => cleanCamelCase(v.name))
+        .toList();
 
     return Container(
       decoration: BoxDecoration(
@@ -154,26 +149,24 @@ class ActorDropdown extends StatelessWidget {
         child: DropdownButton<String>(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           icon: const Icon(Icons.arrow_drop_down_rounded),
-          value: value,
+          value: selectedOption,
           isExpanded: true,
           underline: Container(),
-          onChanged: (v) {
-            if (v != null) onChanged(v);
+          onChanged: (value) {
+            if (value == null || selectedActor == null) return;
+            final voice = Voice.values.firstWhere(
+              (v) => cleanCamelCase(v.name) == value,
+            );
+            cubit.updateVoice(selectedActor, voice);
           },
           items: dropdownData.map((item) {
-            return DropdownMenuItem(
-              value: item,
-              child: Text(item), // menu items unchanged
-            );
+            return DropdownMenuItem(value: item, child: Text(item));
           }).toList(),
           selectedItemBuilder: (context) {
             return dropdownData.map((item) {
               return Row(
                 children: [
-                  Padding(
-                    padding: EdgeInsets.only(top: 4),
-                    child: const Icon(Icons.groups_3_rounded, size: 18),
-                  ),
+                  const Icon(Icons.groups_3_rounded, size: 18),
                   const SizedBox(width: 12),
                   Text(item),
                 ],
@@ -232,10 +225,7 @@ class ActionsList extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  action.name
-                      .split('_')
-                      .map((word) => word[0].toUpperCase() + word.substring(1))
-                      .join(' '),
+                  cleanCamelCase(action.name),
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: selected ? theme.colorScheme.primary : textColor,
                     fontWeight: selected ? FontWeight.w500 : FontWeight.normal,
@@ -405,4 +395,11 @@ class LabelInput extends StatelessWidget {
       ),
     );
   }
+}
+
+String cleanCamelCase(String s) {
+  return s
+      .split('_')
+      .map((word) => word[0].toUpperCase() + word.substring(1))
+      .join(' ');
 }
