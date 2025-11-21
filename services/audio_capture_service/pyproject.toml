@@ -5,7 +5,7 @@ description = "Captures raw microphone audio samples, packages the samples into 
 requires-python = ">=3.13"
 dependencies = [
     "cgt-ai-core",
-    "numpy>=2.3.4",
+    "numpy>=2.3.5",
     "sounddevice>=0.5.3",
 ]
 

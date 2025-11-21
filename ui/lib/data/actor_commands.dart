@@ -80,7 +80,7 @@ class CommandConfig {
       commands: [
         ActorCommands(
           actor: Actor.driver,
-          voice: Voice.American_Male_Onyx,
+          voice: Voice.American_Male_Liam,
           commands: [
             Command(
               action: Action.drive,
@@ -96,7 +96,7 @@ class CommandConfig {
         ),
         ActorCommands(
           actor: Actor.gunner,
-          voice: Voice.American_Male_Onyx,
+          voice: Voice.American_Female_Heart,
           commands: [
             Command(
               action: Action.fire,

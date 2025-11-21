@@ -219,6 +219,7 @@ __marimo__/
 #############
 
 # User-specific stuff
+.idea/**/misc.xml
 .idea/**/workspace.xml
 .idea/**/tasks.xml
 .idea/**/usage.statistics.xml
