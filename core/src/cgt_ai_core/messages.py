@@ -4,6 +4,7 @@ import numpy as np
 
 from typing import Any, Type
 
+import cgt_ai_core.actor_command_enums as ac
 import cgt_ai_core.tts_enums as tts
 
 
@@ -24,6 +25,33 @@ class TTSRequestMessage(msgspec.Struct):
     text: str
     cache_speech: bool = True
     play_immediately: bool = True
+
+
+class Command(msgspec.Struct):
+    action: ac.Action
+    reply: str
+    label: str
+
+
+class ActorCommands(msgspec.Struct):
+    actor: ac.Actor
+    voice: int
+    commands: list[Command]
+
+
+class CommandConfigMessage(msgspec.Struct):
+    last_modified: str
+    commands: list[ActorCommands]
+
+
+class ActionRecognitionMessage(msgspec.Struct):
+    score: float
+    actor: ac.Actor
+    action: ac.Action
+
+
+class CurrentActorMessage(msgspec.Struct):
+    actor: ac.Actor
 
 
 def enc_hook(obj: Any) -> Any:

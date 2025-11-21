@@ -28,7 +28,7 @@ class RabbitMQProducer {
     _channel = await _client.channel();
     _exchange = await _channel.exchange(
       exchangeName,
-      ExchangeType.DIRECT,
+      ExchangeType.FANOUT,
       durable: false,
     );
   }
