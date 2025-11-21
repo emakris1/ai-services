@@ -3,14 +3,15 @@ import logging
 import numpy as np
 import resampy
 import sounddevice as sd
-import threading
 
+from threading import Lock
 from pika.exchange_type import ExchangeType
 from typing import Any
 
 from cgt_ai_core.log_config import LOG_FORMAT
-from cgt_ai_core.messages import AudioMessage
+from cgt_ai_core.messages import AudioMessage, StopListeningMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
+from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.rmq_service import RmqService
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
 
@@ -66,7 +67,7 @@ class AudioPlaybackService(RmqService):
         self.output_stream_buffer: np.ndarray[tuple[int, int], np.dtype[np.float32]] = np.empty(
             shape=(0, self.channels), dtype=self.dtype)
 
-        self.mutex = threading.Lock()
+        self.lock: Lock = Lock()
 
         self.audio_playback_consumer: RmqConsumer | None = None
         self.add_consumer(
@@ -77,6 +78,16 @@ class AudioPlaybackService(RmqService):
                 exchange_type=ExchangeType.direct,
                 on_consumer_ready_callback=self.on_audio_playback_consumer_ready,
                 on_message_callback=self.on_audio_playback_message
+            )
+        )
+
+        self.stop_listening_producer: RmqProducer | None = None
+        self.add_producer(
+            RmqProducer(
+                on_producer_ready_callback=self.on_stop_listening_producer_ready,
+                connection_params=self.connection_params,
+                exchange_name='stop_listening',
+                exchange_type=ExchangeType.direct
             )
         )
 
@@ -92,9 +103,13 @@ class AudioPlaybackService(RmqService):
         except asyncio.QueueShutDown:
             LOGGER.warning('Audio playback queue is shut down. Discarding audio message.')
 
+    def on_stop_listening_producer_ready(self, producer: RmqProducer):
+        self.stop_listening_producer = producer
+
     async def process_audio_playback(self):
         async for message in self.audio_playback_generator():
             self.append_samples(message)
+            self.send_stop_listening(message)
 
     async def audio_playback_generator(self):
         while True:
@@ -123,15 +138,15 @@ class AudioPlaybackService(RmqService):
         # Expand mono to stereo for a better playback experience
         stereo_buffer = np.column_stack((resampled_buffer, resampled_buffer)).astype(self.dtype, copy=False)
 
-        self.mutex.acquire()
+        self.lock.acquire()
         self.output_stream_buffer = np.concatenate((self.output_stream_buffer, stereo_buffer))
-        self.mutex.release()
+        self.lock.release()
 
     async def play_output_stream(self):
         stop_event = asyncio.Event()
 
         def callback(outdata: np.ndarray, _unused_frames: int, _unused_time: Any, _unused_status: sd.CallbackFlags):
-            if not self.mutex.acquire(blocking=False):
+            if not self.lock.acquire(blocking=False):
                 LOGGER.debug('Could not acquire lock for output stream buffer - zero fill (silence)')
                 outdata.fill(0)
                 return
@@ -152,7 +167,7 @@ class AudioPlaybackService(RmqService):
                 LOGGER.debug('Output stream buffer has no frames available - zero fill (silence)')
                 outdata.fill(0)
 
-            self.mutex.release()
+            self.lock.release()
 
         output_stream = sd.OutputStream(
             device=self.device_index,
@@ -163,6 +178,12 @@ class AudioPlaybackService(RmqService):
         )
         with output_stream:
             await stop_event.wait()
+
+    def send_stop_listening(self, message: AudioMessage):
+        duration = message.samples.shape[0] / message.sample_rate
+        message = StopListeningMessage(duration=duration)
+        LOGGER.info('Publishing stop listening message: %s', message)
+        self.stop_listening_producer.publish_message(message)
 
 
 async def main():
