@@ -86,7 +86,7 @@ class SpeechSynthesisService(RmqService):
                 # TODO: add support for other languages
                 language = tts.Language.AMERICAN_ENGLISH
                 voice = tts.get_voice(actor_command.voice)
-                text = command.reply
+                text = command.reply.lower()
                 key = (language, voice, text)
                 LOGGER.info('Caching speech for %s.', key)
                 if key not in self.speech_cache:
@@ -122,7 +122,7 @@ class SpeechSynthesisService(RmqService):
                 )
                 continue
 
-            key = (tts_req_msg.language, tts_req_msg.voice, tts_req_msg.text)
+            key = (tts_req_msg.language, tts_req_msg.voice, tts_req_msg.text.lower())
             if key in self.speech_cache:
                 LOGGER.info('Cache entry found for %s. Reusing cached speech.', key)
                 speech_chunks = self.speech_cache[key]
