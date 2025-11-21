@@ -61,7 +61,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "cgt-ai-core", directory = "../../core" },
-    { name = "numpy", specifier = ">=2.3.4" },
+    { name = "numpy", specifier = ">=2.3.5" },
     { name = "resampy", specifier = ">=0.4.3" },
     { name = "sounddevice", specifier = ">=0.5.3" },
 ]

@@ -7,7 +7,7 @@ dependencies = [
     "cgt-ai-core",
     "en-core-web-sm",
     "kokoro>=0.9.4",
-    "numpy>=2.3.4",
+    "numpy>=2.3.5",
 ]
 
 [tool.uv]

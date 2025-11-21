@@ -6,7 +6,7 @@ requires-python = ">=3.13"
 dependencies = [
     "cgt-ai-core",
     "faster-whisper>=1.2.0",
-    "numpy>=2.3.4",
+    "numpy>=2.3.5",
     "resampy>=0.4.3",
     "silero-vad>=6.2.0"
 ]
