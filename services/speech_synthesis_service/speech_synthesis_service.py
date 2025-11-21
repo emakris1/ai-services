@@ -88,8 +88,8 @@ class SpeechSynthesisService(RmqService):
                 voice = tts.get_voice(actor_command.voice)
                 text = command.reply.lower()
                 key = (language, voice, text)
-                LOGGER.info('Caching speech for %s.', key)
                 if key not in self.speech_cache:
+                    LOGGER.info('Caching speech for %s.', key)
                     speech_chunks = []
                     generator = self.pipelines[language](text=text, voice=voice.value)
                     for index, (graphemes, phonemes, speech_tensor) in enumerate(generator):
