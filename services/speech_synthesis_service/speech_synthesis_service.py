@@ -8,7 +8,7 @@ from pika.exchange_type import ExchangeType
 import cgt_ai_core.tts_enums as tts
 
 from cgt_ai_core.log_config import LOG_FORMAT
-from cgt_ai_core.messages import TTSRequestMessage, AudioMessage
+from cgt_ai_core.messages import CommandConfigMessage, TTSRequestMessage, AudioMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.rmq_service import RmqService
@@ -31,6 +31,18 @@ class SpeechSynthesisService(RmqService):
         self.sample_rate: int = 24000 # Kokoro only returns 24kHz audio
 
         self.speech_cache: dict[tuple[tts.Language, tts.Voice, str], list[np.ndarray]] = {}
+
+        self.command_config_consumer: RmqConsumer | None = None
+        self.add_consumer(
+            RmqConsumer(
+                message_type=CommandConfigMessage,
+                connection_params=self.connection_params,
+                exchange_name='actor_commands',
+                exchange_type=ExchangeType.fanout,
+                on_consumer_ready_callback=self.on_command_config_consumer_ready,
+                on_message_callback=self.on_receive_command_config_message
+            )
+        )
 
         self.tts_request_consumer: RmqConsumer | None = None
         self.add_consumer(
@@ -63,6 +75,27 @@ class SpeechSynthesisService(RmqService):
                 device='cuda'
             )
 
+    def on_command_config_consumer_ready(self, consumer: RmqConsumer):
+        self.command_config_consumer = consumer
+
+    def on_receive_command_config_message(self, _unused_consumer: RmqConsumer, message: CommandConfigMessage):
+        LOGGER.info('Command config message received. Clearing and rebuilding speech cache.')
+        self.speech_cache = {}
+        for actor_command in message.commands:
+            for command in actor_command.commands:
+                # TODO: add support for other languages
+                language = tts.Language.AMERICAN_ENGLISH
+                voice = tts.get_voice(actor_command.voice)
+                text = command.reply.lower()
+                key = (language, voice, text)
+                LOGGER.info('Caching speech for %s.', key)
+                if key not in self.speech_cache:
+                    speech_chunks = []
+                    generator = self.pipelines[language](text=text, voice=voice.value)
+                    for index, (graphemes, phonemes, speech_tensor) in enumerate(generator):
+                        speech_chunks.append(speech_tensor.detach().cpu().numpy())
+                    self.speech_cache[key] = speech_chunks
+
     def on_tts_request_consumer_ready(self, consumer: RmqConsumer):
         self.tts_request_consumer = consumer
 
@@ -89,12 +122,14 @@ class SpeechSynthesisService(RmqService):
                 )
                 continue
 
-            key = (tts_req_msg.language, tts_req_msg.voice, tts_req_msg.text)
+            key = (tts_req_msg.language, tts_req_msg.voice, tts_req_msg.text.lower())
             if key in self.speech_cache:
+                LOGGER.info('Cache entry found for %s. Reusing cached speech.', key)
                 speech_chunks = self.speech_cache[key]
             else:
+                LOGGER.info('Cache entry not found for %s. Generating speech.', key)
                 speech_chunks = []
-                generator = self.pipelines[tts_req_msg.language](tts_req_msg.text, voice=tts_req_msg.voice.value)
+                generator = self.pipelines[tts_req_msg.language](text=tts_req_msg.text, voice=tts_req_msg.voice.value)
                 for index, (graphemes, phonemes, speech_tensor) in enumerate(generator):
                     speech_chunks.append(speech_tensor.detach().cpu().numpy())
                 if tts_req_msg.cache_speech:

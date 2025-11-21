@@ -44,3 +44,10 @@ class Voice(enum.Enum):
     SPANISH_MALE_SANTA = 'em_santa'
 
     SPANISH_FEMALE_DORA = 'ef_dora'
+
+def get_voice(index: int) -> Voice:
+    voices = list(Voice)
+    if index >= len(voices):
+        raise ValueError(f'Voice index {index} is out of range')
+
+    return voices[index]
