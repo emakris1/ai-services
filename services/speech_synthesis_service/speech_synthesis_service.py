@@ -88,7 +88,7 @@ class SpeechSynthesisService(RmqService):
                 voice = tts.get_voice(actor_command.voice)
                 text = command.reply
                 key = (language, voice, text)
-                LOGGER.info('Caching speech for (language=%s, voice=%s, text="%s").', language, voice, text)
+                LOGGER.info('Caching speech for %s.', key)
                 if key not in self.speech_cache:
                     speech_chunks = []
                     generator = self.pipelines[language](text=text, voice=voice.value)
@@ -124,8 +124,10 @@ class SpeechSynthesisService(RmqService):
 
             key = (tts_req_msg.language, tts_req_msg.voice, tts_req_msg.text)
             if key in self.speech_cache:
+                LOGGER.info('Cache entry found for %s. Reusing cached speech.', key)
                 speech_chunks = self.speech_cache[key]
             else:
+                LOGGER.info('Cache entry not found for %s. Generating speech.', key)
                 speech_chunks = []
                 generator = self.pipelines[tts_req_msg.language](text=tts_req_msg.text, voice=tts_req_msg.voice.value)
                 for index, (graphemes, phonemes, speech_tensor) in enumerate(generator):
