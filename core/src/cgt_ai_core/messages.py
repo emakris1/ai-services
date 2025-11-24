@@ -12,6 +12,9 @@ class AudioMessage(msgspec.Struct):
     sample_rate: int
     samples: np.ndarray
 
+class StopListeningMessage(msgspec.Struct):
+    duration: float
+
 
 class SpeechRecognitionMessage(msgspec.Struct):
     language: str

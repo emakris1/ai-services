@@ -2,12 +2,15 @@ import asyncio
 import logging
 import numpy as np
 import sounddevice as sd
+import time
 
+from threading import Lock
 from pika.exchange_type import ExchangeType
 from typing import Any
 
 from cgt_ai_core.log_config import LOG_FORMAT
-from cgt_ai_core.messages import AudioMessage
+from cgt_ai_core.messages import AudioMessage, StopListeningMessage
+from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.rmq_service import RmqService
 from cgt_ai_core.service_arg_parser import get_service_arg_parser
@@ -68,6 +71,13 @@ class AudioCaptureService(RmqService):
             self.device_name
         )
 
+        self.event_loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
+        self.input_stream_queue: asyncio.Queue[np.ndarray] = asyncio.Queue()
+
+        self.lock: Lock = Lock()
+        self.stop_listening_duration: float = 0.0
+        self.last_duration_update_time: float = 0.0
+
         self.audio_capture_producer: RmqProducer | None = None
         self.add_producer(
             RmqProducer(
@@ -75,6 +85,18 @@ class AudioCaptureService(RmqService):
                 connection_params=self.connection_params,
                 exchange_name='audio_capture',
                 exchange_type=ExchangeType.direct
+            )
+        )
+
+        self.stop_listening_consumer: RmqConsumer | None = None
+        self.add_consumer(
+            RmqConsumer(
+                message_type=StopListeningMessage,
+                connection_params=self.connection_params,
+                exchange_name='stop_listening',
+                exchange_type=ExchangeType.direct,
+                on_consumer_ready_callback=self.on_stop_listening_consumer_ready,
+                on_message_callback=self.on_stop_listening_message
             )
         )
 
@@ -92,14 +114,26 @@ class AudioCaptureService(RmqService):
             self.audio_capture_producer.publish_message(message)
 
     async def input_stream_generator(self):
-        """Generator that yields blocks of input data as NumPy arrays."""
-        q_in: asyncio.Queue[np.ndarray] = asyncio.Queue()
-        loop = asyncio.get_running_loop()
 
         def callback(indata: np.ndarray, frames: int, _unused_time: Any, _unused_status: sd.CallbackFlags):
+            if not self.lock.acquire(blocking=False):
+                LOGGER.debug('Could not acquire lock for input stream buffer. Discarding input stream data.')
+                return
+            if self.stop_listening_duration > 0.0:
+                LOGGER.info('Stop listening is active for %.2f more second(s). Discarding input stream data.',
+                            self.stop_listening_duration)
+                current_time = time.monotonic()
+                duration = current_time - self.last_duration_update_time
+                self.stop_listening_duration = max(self.stop_listening_duration - duration, 0.0)
+                self.last_duration_update_time = current_time
+                self.lock.release()
+                return
+            else:
+                self.lock.release()
+
             LOGGER.debug('Received %d frames of input stream data.', frames)
             try:
-                loop.call_soon_threadsafe(q_in.put_nowait, indata.copy())
+                self.event_loop.call_soon_threadsafe(self.input_stream_queue.put_nowait, indata.copy())
             except asyncio.QueueFull:
                 LOGGER.warning('Input stream queue is full. Discarding input stream data.')
             except asyncio.QueueShutDown:
@@ -114,7 +148,18 @@ class AudioCaptureService(RmqService):
         )
         with input_stream:
             while True:
-                yield await q_in.get()
+                yield await self.input_stream_queue.get()
+
+    def on_stop_listening_consumer_ready(self, consumer: RmqConsumer):
+        self.stop_listening_consumer = consumer
+
+    def on_stop_listening_message(self, _unused_consumer: RmqConsumer, message: StopListeningMessage):
+        LOGGER.info('Received stop listening message. Dropping audio captures for an (additional) %.2f second(s).',
+                    message.duration)
+        self.lock.acquire()
+        self.stop_listening_duration += message.duration
+        self.last_duration_update_time = time.monotonic()
+        self.lock.release()
 
 
 async def main():
