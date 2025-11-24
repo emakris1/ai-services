@@ -11,6 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_bloc: ^9.0.0
+  another_flushbar: ^1.12.30
 
 dev_dependencies:
   flutter_test:
