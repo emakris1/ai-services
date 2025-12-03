@@ -6,11 +6,13 @@ from typing import Any, Type
 
 import cgt_ai_core.actor_command_enums as ac
 import cgt_ai_core.tts_enums as tts
+import cgt_ai_core.notification_enums as notifications
 
 
 class AudioMessage(msgspec.Struct):
     sample_rate: int
     samples: np.ndarray
+
 
 class StopListeningMessage(msgspec.Struct):
     duration: float
@@ -55,6 +57,13 @@ class ActionRecognitionMessage(msgspec.Struct):
 
 class CurrentActorMessage(msgspec.Struct):
     actor: ac.Actor
+
+
+class NotificationMessage(msgspec.Struct):
+    icon: notifications.Icon
+    title: str
+    message: str
+    color: notifications.Color
 
 
 def enc_hook(obj: Any) -> Any:

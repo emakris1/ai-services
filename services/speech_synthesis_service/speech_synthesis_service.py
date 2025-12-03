@@ -6,9 +6,10 @@ import numpy as np
 from pika.exchange_type import ExchangeType
 
 import cgt_ai_core.tts_enums as tts
+import cgt_ai_core.notification_enums as notifications
 
 from cgt_ai_core.log_config import LOG_FORMAT
-from cgt_ai_core.messages import CommandConfigMessage, TTSRequestMessage, AudioMessage
+from cgt_ai_core.messages import AudioMessage, CommandConfigMessage, NotificationMessage, TTSRequestMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.rmq_service import RmqService
@@ -66,6 +67,16 @@ class SpeechSynthesisService(RmqService):
             )
         )
 
+        self.notification_producer: RmqProducer | None = None
+        self.add_producer(
+            RmqProducer(
+                connection_params=self.connection_params,
+                exchange_name='gui_notifications',
+                exchange_type=ExchangeType.fanout,
+                on_producer_ready_callback=self.on_notifications_producer_ready
+            )
+        )
+
         self.model: kokoro.KModel = kokoro.KModel()
         self.pipelines: dict[tts.Language, kokoro.KPipeline] = {}
         for language in tts.Language:
@@ -95,6 +106,15 @@ class SpeechSynthesisService(RmqService):
                     for index, (graphemes, phonemes, speech_tensor) in enumerate(generator):
                         speech_chunks.append(speech_tensor.detach().cpu().numpy())
                     self.speech_cache[key] = speech_chunks
+
+        self.notification_producer.publish_message(
+            NotificationMessage(
+                icon=notifications.Icon.CHECK_MARK,
+                title='Speech Synthesis Complete',
+                message=f'Synthesized {len(self.speech_cache.keys())} phrases.',
+                color=notifications.Color.GREEN
+            )
+        )
 
     def on_tts_request_consumer_ready(self, consumer: RmqConsumer):
         self.tts_request_consumer = consumer
@@ -147,6 +167,9 @@ class SpeechSynthesisService(RmqService):
     async def tts_request_generator(self):
         while True:
             yield await self.tts_request_queue.get()
+
+    def on_notifications_producer_ready(self, producer: RmqProducer):
+        self.notification_producer = producer
 
 
 async def main():
