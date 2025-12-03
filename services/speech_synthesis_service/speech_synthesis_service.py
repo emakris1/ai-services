@@ -90,7 +90,6 @@ class SpeechSynthesisService(RmqService):
         self.command_config_consumer = consumer
 
     def on_receive_command_config_message(self, _unused_consumer: RmqConsumer, message: CommandConfigMessage):
-        return
         LOGGER.info('Command config message received. Clearing and rebuilding speech cache.')
         self.speech_cache = {}
         for actor_command in message.commands:
