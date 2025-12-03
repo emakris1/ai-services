@@ -90,6 +90,7 @@ class SpeechSynthesisService(RmqService):
         self.command_config_consumer = consumer
 
     def on_receive_command_config_message(self, _unused_consumer: RmqConsumer, message: CommandConfigMessage):
+        return
         LOGGER.info('Command config message received. Clearing and rebuilding speech cache.')
         self.speech_cache = {}
         for actor_command in message.commands:
@@ -143,19 +144,9 @@ class SpeechSynthesisService(RmqService):
                 continue
 
             key = (tts_req_msg.language, tts_req_msg.voice, tts_req_msg.text.lower())
-            if key in self.speech_cache:
+            if key in self.speech_cache and tts_req_msg.play_immediately:
                 LOGGER.info('Cache entry found for %s. Reusing cached speech.', key)
                 speech_chunks = self.speech_cache[key]
-            else:
-                LOGGER.info('Cache entry not found for %s. Generating speech.', key)
-                speech_chunks = []
-                generator = self.pipelines[tts_req_msg.language](text=tts_req_msg.text, voice=tts_req_msg.voice.value)
-                for index, (graphemes, phonemes, speech_tensor) in enumerate(generator):
-                    speech_chunks.append(speech_tensor.detach().cpu().numpy())
-                if tts_req_msg.cache_speech:
-                    self.speech_cache[key] = speech_chunks
-
-            if tts_req_msg.play_immediately:
                 for speech_chunk in speech_chunks:
                     audio_msg = AudioMessage(
                         sample_rate=self.sample_rate,
@@ -163,6 +154,23 @@ class SpeechSynthesisService(RmqService):
                     )
                     LOGGER.info('Publishing audio playback message.')
                     self.audio_playback_producer.publish_message(audio_msg)
+            else:
+                LOGGER.info('Cache entry not found for %s. Generating speech.', key)
+                speech_chunks = []
+                generator = self.pipelines[tts_req_msg.language](text=tts_req_msg.text, voice=tts_req_msg.voice.value)
+                for index, (graphemes, phonemes, speech_tensor) in enumerate(generator):
+                    speech_chunk = speech_tensor.detach().cpu().numpy()
+                    if tts_req_msg.play_immediately:
+                        audio_msg = AudioMessage(
+                            sample_rate=self.sample_rate,
+                            samples=speech_chunk
+                        )
+                        LOGGER.info('Publishing audio playback message.')
+                        self.audio_playback_producer.publish_message(audio_msg)
+                    speech_chunks.append(speech_chunk)
+                if tts_req_msg.cache_speech:
+                    self.speech_cache[key] = speech_chunks
+
 
     async def tts_request_generator(self):
         while True:
