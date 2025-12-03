@@ -13,6 +13,7 @@ class AudioMessage(msgspec.Struct):
     sample_rate: int
     samples: np.ndarray
 
+
 class StopListeningMessage(msgspec.Struct):
     duration: float
 
@@ -57,11 +58,13 @@ class ActionRecognitionMessage(msgspec.Struct):
 class CurrentActorMessage(msgspec.Struct):
     actor: ac.Actor
 
+
 class NotificationMessage(msgspec.Struct):
-    icon: notifications.NotificationIcon
+    icon: notifications.Icon
     title: str
     message: str
-    color: notifications.NotificationColor
+    color: notifications.Color
+
 
 def enc_hook(obj: Any) -> Any:
     if isinstance(obj, np.ndarray):

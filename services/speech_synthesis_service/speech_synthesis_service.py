@@ -9,7 +9,7 @@ import cgt_ai_core.tts_enums as tts
 import cgt_ai_core.notification_enums as notifications
 
 from cgt_ai_core.log_config import LOG_FORMAT
-from cgt_ai_core.messages import CommandConfigMessage, TTSRequestMessage, AudioMessage, NotificationMessage
+from cgt_ai_core.messages import AudioMessage, CommandConfigMessage, NotificationMessage, TTSRequestMessage
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
 from cgt_ai_core.rmq_service import RmqService
@@ -67,7 +67,7 @@ class SpeechSynthesisService(RmqService):
             )
         )
 
-        self.notifications_producer: RmqProducer | None = None
+        self.notification_producer: RmqProducer | None = None
         self.add_producer(
             RmqProducer(
                 connection_params=self.connection_params,
@@ -107,18 +107,17 @@ class SpeechSynthesisService(RmqService):
                         speech_chunks.append(speech_tensor.detach().cpu().numpy())
                     self.speech_cache[key] = speech_chunks
 
-        self.notifications_producer.publish_message(NotificationMessage(
-            icon=notifications.NotificationIcon.CHECK_MARK,
-            title="Speech Synthesis Complete",
-            message=f"Synthesized {len(self.speech_cache.keys())} phrases.",
-            color=notifications.NotificationColor.GREEN
-        ))
+        self.notification_producer.publish_message(
+            NotificationMessage(
+                icon=notifications.Icon.CHECK_MARK,
+                title='Speech Synthesis Complete',
+                message=f'Synthesized {len(self.speech_cache.keys())} phrases.',
+                color=notifications.Color.GREEN
+            )
+        )
 
     def on_tts_request_consumer_ready(self, consumer: RmqConsumer):
         self.tts_request_consumer = consumer
-
-    def on_notifications_producer_ready(self, producer: RmqProducer):
-        self.notifications_producer = producer
 
     def on_tts_request_message(self, _unused_consumer: RmqConsumer, message: TTSRequestMessage):
         try:
@@ -168,6 +167,9 @@ class SpeechSynthesisService(RmqService):
     async def tts_request_generator(self):
         while True:
             yield await self.tts_request_queue.get()
+
+    def on_notifications_producer_ready(self, producer: RmqProducer):
+        self.notification_producer = producer
 
 
 async def main():
