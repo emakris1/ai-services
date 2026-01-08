@@ -43,25 +43,19 @@ class SpeechRecognitionService(RmqService):
 
         self.audio_capture_consumer: RmqConsumer | None = None
         self.add_consumer(
-            RmqConsumer(
-                message_type=AudioMessage,
-                connection_params=self.connection_params,
-                exchange_name='audio_capture',
-                exchange_type=ExchangeType.direct,
-                on_consumer_ready_callback=self.on_audio_capture_consumer_ready,
-                on_message_callback=self.on_audio_capture_message
-            )
+            message_type=AudioMessage,
+            exchange_name='audio_capture',
+            exchange_type=ExchangeType.direct,
+            on_consumer_ready_callback=self.on_audio_capture_consumer_ready,
+            on_message_callback=self.on_audio_capture_message
         )
 
         self.speech_recognition_producer: RmqProducer | None = None
         self.add_producer(
-            RmqProducer(
-                connection_params=self.connection_params,
-                exchange_name='speech_recognition',
-                exchange_type=ExchangeType.direct,
-                routing_key='actor_commands_service',
-                on_producer_ready_callback=self.on_speech_recognition_producer_ready
-            )
+            exchange_name='speech_recognition',
+            exchange_type=ExchangeType.direct,
+            routing_key='actor_commands_service',
+            on_producer_ready_callback=self.on_speech_recognition_producer_ready
         )
 
         self.silero_iterator = silero_vad.VADIterator(
@@ -201,7 +195,15 @@ async def main():
         username=args.rmq_username,
         password=args.rmq_password,
     )
-    await service.run()
+
+    try:
+        await service.run()
+    except asyncio.CancelledError as exc:
+        LOGGER.exception('Run cancelled.', exc_info=exc)
+    except Exception as exc:
+        LOGGER.exception('Unhandled exception.', exc_info=exc)
+    finally:
+        await service.stop()
 
 if __name__ == '__main__':
     asyncio.run(main())

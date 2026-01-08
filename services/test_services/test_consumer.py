@@ -27,27 +27,22 @@ class TestConsumer(RmqService):
 
         self.foo_consumer: RmqConsumer | None = None
         self.bar_consumer: RmqConsumer | None = None
+
         self.add_consumer(
-            RmqConsumer(
-                message_type=FooMessage,
-                connection_params=self.connection_params,
-                exchange_name='foo',
-                routing_key=self.routing_key,
-                exchange_type=ExchangeType.direct,
-                on_consumer_ready_callback=self.on_foo_consumer_ready,
-                on_message_callback=self.on_foo_message
-            )
+            message_type=FooMessage,
+            exchange_name='foo',
+            routing_key=self.routing_key,
+            exchange_type=ExchangeType.direct,
+            on_consumer_ready_callback=self.on_foo_consumer_ready,
+            on_message_callback=self.on_foo_message
         )
         self.add_consumer(
-            RmqConsumer(
-                message_type=BarMessage,
-                connection_params=self.connection_params,
-                exchange_name='bar',
-                routing_key=self.routing_key,
-                exchange_type=ExchangeType.direct,
-                on_consumer_ready_callback=self.on_bar_consumer_ready,
-                on_message_callback=self.on_bar_message
-            )
+            message_type=BarMessage,
+            exchange_name='bar',
+            routing_key=self.routing_key,
+            exchange_type=ExchangeType.direct,
+            on_consumer_ready_callback=self.on_bar_consumer_ready,
+            on_message_callback=self.on_bar_message
         )
 
     def on_foo_consumer_ready(self, consumer: RmqConsumer):
@@ -82,7 +77,15 @@ async def main():
         username=args.rmq_username,
         password=args.rmq_password
     )
-    await service.run()
+
+    try:
+        await service.run()
+    except asyncio.CancelledError as exc:
+        LOGGER.exception('Run cancelled.', exc_info=exc)
+    except Exception as exc:
+        LOGGER.exception('Unhandled exception.', exc_info=exc)
+    finally:
+        await service.stop()
 
 if __name__ == '__main__':
     asyncio.run(main())
