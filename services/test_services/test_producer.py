@@ -13,7 +13,6 @@ from cgt_ai_core.service_arg_parser import get_service_arg_parser
 
 from test_messages import FooMessage, BarMessage
 
-
 LOGGER = logging.getLogger(__name__)
 
 
