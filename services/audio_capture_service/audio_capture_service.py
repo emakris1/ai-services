@@ -96,6 +96,9 @@ class AudioCaptureService(RmqService):
 
     def on_audio_capture_producer_ready(self, producer: RmqProducer):
         self.audio_capture_producer = producer
+
+    def on_service_ready(self):
+        super().on_service_ready()
         asyncio.create_task(self.sample_input_stream())
 
     async def sample_input_stream(self):

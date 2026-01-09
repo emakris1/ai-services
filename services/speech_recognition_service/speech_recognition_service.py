@@ -79,6 +79,9 @@ class SpeechRecognitionService(RmqService):
 
     def on_speech_recognition_producer_ready(self, producer: RmqProducer):
         self.speech_recognition_producer = producer
+
+    def on_service_ready(self):
+        super().on_service_ready()
         asyncio.create_task(self.process_audio_captures())
 
     async def process_audio_captures(self):

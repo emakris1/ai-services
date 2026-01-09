@@ -117,6 +117,9 @@ class SpeechSynthesisService(RmqService):
 
     def on_audio_playback_producer_ready(self, producer: RmqProducer):
         self.audio_playback_producer = producer
+
+    def on_service_ready(self):
+        super().on_service_ready()
         asyncio.create_task(self.process_tts_requests())
 
     async def process_tts_requests(self):

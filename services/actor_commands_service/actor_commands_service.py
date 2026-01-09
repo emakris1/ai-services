@@ -99,10 +99,13 @@ class ActorCommandsService(RmqService):
 
     def on_action_recognition_producer_ready(self, producer: RmqProducer):
         self.action_recognition_producer = producer
-        asyncio.create_task(self.process_speech_recognition())
 
     def on_tts_request_producer_ready(self, producer: RmqProducer):
         self.tts_request_producer = producer
+
+    def on_service_ready(self):
+        super().on_service_ready()
+        asyncio.create_task(self.process_speech_recognition())
 
     async def process_speech_recognition(self):
         while True:

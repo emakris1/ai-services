@@ -87,7 +87,11 @@ class AudioPlaybackService(RmqService):
 
     def on_audio_playback_consumer_ready(self, consumer: RmqConsumer):
         self.audio_playback_consumer = consumer
-        asyncio.gather(self.process_audio_playback(), self.play_output_stream())
+
+    def on_service_ready(self):
+        super().on_service_ready()
+        asyncio.create_task(self.process_audio_playback())
+        asyncio.create_task(self.play_output_stream())
 
     def on_audio_playback_message(self, _unused_consumer: RmqConsumer, message: AudioMessage):
         try:

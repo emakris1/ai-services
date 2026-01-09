@@ -56,7 +56,6 @@ class TestProducer(RmqService):
 
     def on_service_ready(self):
         super().on_service_ready()
-        LOGGER.info('Service is ready!')
         publish_foo_msg_task = asyncio.create_task(self.publish_foo_message())
         publish_bar_msg_task = asyncio.create_task(self.publish_bar_message())
 
