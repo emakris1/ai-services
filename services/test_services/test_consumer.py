@@ -77,15 +77,7 @@ async def main():
         username=args.rmq_username,
         password=args.rmq_password
     )
-
-    try:
-        await service.run()
-    except asyncio.CancelledError as exc:
-        LOGGER.exception('Run cancelled.', exc_info=exc)
-    except Exception as exc:
-        LOGGER.exception('Unhandled exception.', exc_info=exc)
-    finally:
-        await service.stop()
+    await service.run()
 
 if __name__ == '__main__':
     asyncio.run(main())

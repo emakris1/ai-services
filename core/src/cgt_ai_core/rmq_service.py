@@ -3,12 +3,10 @@ import logging
 import msgspec
 
 from dataclasses import dataclass
-from pika import ConnectionParameters
-from pika.credentials import PlainCredentials
 from pika.exchange_type import ExchangeType
-from typing import Callable, Generic, Type, TypeVar
+from typing import Callable, Type, TypeVar
 
-from cgt_ai_core.rmq_default_config import DefaultConnectionParameters
+from cgt_ai_core.rmq_connection import RmqConnection
 from cgt_ai_core.rmq_consumer import RmqConsumer
 from cgt_ai_core.rmq_producer import RmqProducer
 
@@ -19,7 +17,7 @@ T = TypeVar("T", bound=msgspec.Struct)
 
 @dataclass
 class RmqConsumerData:
-    tag: str
+    name: str
     reference: RmqConsumer
     client_on_ready_callback: Callable[[RmqConsumer], None]
     ready_event: asyncio.Event
@@ -27,153 +25,179 @@ class RmqConsumerData:
 
 @dataclass
 class RmqProducerData:
-    tag: str
+    name: str
     reference: RmqProducer
     client_on_ready_callback: Callable[[RmqProducer], None]
     ready_event: asyncio.Event
 
 
 class RmqService:
-    def __init__(self,
-                 host: str = None,
-                 port: int = None,
-                 username: str = None,
-                 password: str = None):
-        # all host/port/username/password arguments provided - initialize a new ConnectionParameters with arguments
-        if all(arg is not None for arg in (host, port, username, password)):
-            self.connection_params = ConnectionParameters(host=host, port=port, credentials=PlainCredentials(username, password))
-        # any one of host/port/username/password provided - initialize with default ConnectionParameters and override specific arguments
-        else:
-            self.connection_params = DefaultConnectionParameters
-            if host:
-                self.connection_params.host = host
-            if port:
-                self.connection_params.port = port
-            if username:
-                self.connection_params.credentials.username = username
-            if password:
-                self.connection_params.credentials.password = password
+    def __init__(
+        self,
+        host: str = None,
+        port: int = None,
+        username: str = None,
+        password: str = None,
+    ):
+        self.is_running: bool = False
+        self.is_stopping: bool = False
+        self.stop_running_event: asyncio.Event = asyncio.Event()
+        self.connection_closed_event: asyncio.Event = asyncio.Event()
 
-        self.is_running = False
-
+        self.connection: RmqConnection = RmqConnection(
+            host=host,
+            port=port,
+            username=username,
+            password=password,
+            on_connection_closed_callback=self.on_connection_closed,
+            on_channel_opened_callback=self.on_channel_opened,
+        )
         self.consumers: dict[str, RmqConsumerData] = {}
         self.producers: dict[str, RmqProducerData] = {}
 
-    def add_consumer(self,
-                     message_type: Type[T],
-                     exchange_name: str,
-                     exchange_type: ExchangeType,
-                     queue_name: str = '',
-                     routing_key: str = '',
-                     on_consumer_ready_callback: Callable[['RmqConsumer'], None] = lambda _consumer: None,
-                     on_message_callback: Callable[['RmqConsumer[T]', T], None] = lambda _consumer, _message: None):
+    def add_consumer(
+        self,
+        message_type: Type[T],
+        exchange_name: str,
+        exchange_type: ExchangeType,
+        queue_name: str = '',
+        routing_key: str = '',
+        on_consumer_ready_callback: Callable[['RmqConsumer'], None] = lambda _consumer: None,
+        on_message_callback: Callable[['RmqConsumer[T]', T], None] = lambda _consumer, _message: None,
+    ) -> None:
         if self.is_running:
             LOGGER.warning('Cannot add consumer while service is running. Please stop service first and then add consumer.')
             return
 
         consumer = RmqConsumer(
             message_type=message_type,
-            connection_params=self.connection_params,
             exchange_name=exchange_name,
             exchange_type=exchange_type,
             queue_name=queue_name,
             routing_key=routing_key,
             on_consumer_ready_callback=self.on_consumer_ready,
-            on_message_callback=on_message_callback
+            on_message_callback=on_message_callback,
         )
 
-        self.consumers[consumer.consumer_tag] = RmqConsumerData(
-            tag=consumer.consumer_tag,
+        self.consumers[consumer.consumer_name] = RmqConsumerData(
+            name=consumer.consumer_name,
             reference=consumer,
             client_on_ready_callback=on_consumer_ready_callback,
-            ready_event=asyncio.Event()
+            ready_event=asyncio.Event(),
         )
 
-    def add_producer(self,
-                     exchange_name: str,
-                     exchange_type: ExchangeType,
-                     routing_key: str = '',
-                     on_producer_ready_callback: Callable[['RmqProducer'], None] = lambda _producer: None):
+    def add_producer(
+        self,
+        exchange_name: str,
+        exchange_type: ExchangeType,
+        routing_key: str = '',
+        on_producer_ready_callback: Callable[['RmqProducer'], None] = lambda _producer: None
+    ) -> None:
         if self.is_running:
             LOGGER.warning('Cannot add producer while service is running. Please stop service first and then add producer.')
             return
 
         producer = RmqProducer(
-            connection_params=self.connection_params,
             exchange_name=exchange_name,
             exchange_type=exchange_type,
             routing_key=routing_key,
             on_producer_ready_callback=self.on_producer_ready
         )
 
-        self.producers[producer.producer_tag] = RmqProducerData(
-            tag=producer.producer_tag,
+        self.producers[producer.producer_name] = RmqProducerData(
+            name=producer.producer_name,
             reference=producer,
             client_on_ready_callback=on_producer_ready_callback,
             ready_event=asyncio.Event()
         )
 
-    def on_consumer_ready(self, consumer: RmqConsumer):
-        if consumer.consumer_tag in self.consumers:
-            consumer_data = self.consumers[consumer.consumer_tag]
-            consumer_data.client_on_ready_callback(consumer)
-            consumer_data.ready_event.set()
+    async def run(self) -> None:
+        if self.is_running:
+            LOGGER.info('Service is already running.')
+            return
 
-    def on_producer_ready(self, producer: RmqProducer):
-        if producer.producer_tag in self.producers:
-            producer_data = self.producers[producer.producer_tag]
-            producer_data.client_on_ready_callback(producer)
-            producer_data.ready_event.set()
+        LOGGER.info('Running...')
+        self.is_running = True
+        self.connection.open_connection()
 
-    def on_service_ready(self):
-        pass
+        try:
+            await self.stop_running_event.wait()
+        except asyncio.CancelledError as exc:
+            LOGGER.exception('Run cancelled', exc_info=exc)
+        except Exception as exc:
+            LOGGER.exception('Unhandled exception', exc_info=exc)
+        finally:
+            await self.stop()
+            self.is_running = False
+            self.stop_running_event.clear()
 
-    async def open_connections(self):
-        LOGGER.info('Opening all connections...')
+        LOGGER.info('Run completed.')
+
+    async def stop(self) -> None:
+        if self.is_stopping:
+            LOGGER.info('Service is already stopping.')
+            return
+
+        LOGGER.info('Stopping...')
+        self.is_stopping = True
+        self.stop_running_event.set()
+        self.connection.close_connection()
+        try:
+            await asyncio.wait_for(self.connection_closed_event.wait(), timeout=5.0)
+        except asyncio.TimeoutError:
+            LOGGER.warning('Timed out waiting for connection to close.')
+        except asyncio.CancelledError as exc:
+            LOGGER.exception('Stop cancelled', exc_info=exc)
+        except Exception as exc:
+            LOGGER.exception('Unhandled exception', exc_info=exc)
+        finally:
+            self.is_stopping = False
+            self.connection_closed_event.clear()
+
+        LOGGER.info('Stop completed.')
+
+    async def declare_exchanges(self) -> None:
+        LOGGER.debug('Initializing all consumers and producers...')
         for consumer_data in self.consumers.values():
-            consumer_data.reference.open_connection()
+            consumer_data.reference.channel = self.connection.channel
+            consumer_data.reference.declare_exchange()
         for producer_data in self.producers.values():
-            producer_data.reference.open_connection()
+            producer_data.reference.channel = self.connection.channel
+            producer_data.reference.declare_exchange()
 
-        LOGGER.info('Waiting for all connections to finish opening...')
+        LOGGER.debug('Waiting for all consumers and producers to finish initializing...')
         consumer_wait_coros = [consumer_data.ready_event.wait() for consumer_data in self.consumers.values()]
         producer_wait_coros = [producer_data.ready_event.wait() for producer_data in self.producers.values()]
         await asyncio.gather(*consumer_wait_coros, *producer_wait_coros)
 
-        LOGGER.info('All connections are open!')
+        LOGGER.debug('All consumers and producers initialized!')
         self.on_service_ready()
 
-    async def close_connections(self):
-        LOGGER.info('Closing all connections...')
-        for consumer_data in self.consumers.values():
-            consumer_data.reference.close_connection()
-        for producer_data in self.producers.values():
-            producer_data.reference.close_connection()
-        LOGGER.info('All connections are closed!')
+    def on_connection_opened(self) -> None:
+        pass
 
-    async def run(self):
-        LOGGER.info('Running...')
-        consumer_run_coros = [consumer_data.reference.run() for consumer_data in self.consumers.values()]
-        producer_run_coros = [producer_data.reference.run() for producer_data in self.producers.values()]
-        self.is_running = True
-        try:
-            await self.open_connections()
-            await asyncio.gather(*consumer_run_coros, *producer_run_coros)
-        except asyncio.CancelledError as exc:
-            LOGGER.exception('Run cancelled.', exc_info=exc)
-        except Exception as exc:
-            LOGGER.exception('Unhandled exception.', exc_info=exc)
+    def on_connection_closed(self) -> None:
+        self.connection_closed_event.set()
+        if not self.is_stopping:
+            asyncio.create_task(self.stop())
 
-    async def stop(self):
-        LOGGER.info('Stopping...')
-        consumer_stop_coros = [consumer_data.reference.stop() for consumer_data in self.consumers.values()]
-        producer_stop_coros = [producer_data.reference.stop() for producer_data in self.producers.values()]
-        try:
-            await asyncio.gather(*consumer_stop_coros, *producer_stop_coros)
-            await self.close_connections()
-        except asyncio.CancelledError as exc:
-            LOGGER.exception('Stop cancelled.', exc_info=exc)
-        except Exception as exc:
-            LOGGER.exception('Unhandled exception.', exc_info=exc)
-        self.is_running = False
-        LOGGER.info('Stop completed.')
+    def on_channel_opened(self) -> None:
+        asyncio.create_task(self.declare_exchanges())
+
+    def on_channel_closed(self) -> None:
+        pass
+
+    def on_service_ready(self) -> None:
+        pass
+
+    def on_consumer_ready(self, consumer: RmqConsumer) -> None:
+        if consumer.consumer_name in self.consumers:
+            consumer_data = self.consumers[consumer.consumer_name]
+            consumer_data.client_on_ready_callback(consumer)
+            consumer_data.ready_event.set()
+
+    def on_producer_ready(self, producer: RmqProducer) -> None:
+        if producer.producer_name in self.producers:
+            producer_data = self.producers[producer.producer_name]
+            producer_data.client_on_ready_callback(producer)
+            producer_data.ready_event.set()
