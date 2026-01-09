@@ -212,15 +212,7 @@ async def main():
         device_index=args.device_index,
         sample_rate=args.sample_rate
     )
-
-    try:
-        await service.run()
-    except asyncio.CancelledError as exc:
-        LOGGER.exception('Run cancelled.', exc_info=exc)
-    except Exception as exc:
-        LOGGER.exception('Unhandled exception.', exc_info=exc)
-    finally:
-        await service.stop()
+    await service.run()
 
 if __name__ == '__main__':
     asyncio.run(main())

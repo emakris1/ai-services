@@ -33,6 +33,9 @@ class TestProducer(RmqService):
         self.foo_producer: RmqProducer | None = None
         self.bar_producer: RmqProducer | None = None
 
+        self.publish_foo_msg_task: asyncio.Task | None = None
+        self.publish_bar_msg_task: asyncio.Task | None = None
+
         self.add_producer(
             exchange_name='foo',
             routing_key=self.routing_key,
@@ -52,10 +55,16 @@ class TestProducer(RmqService):
     def on_bar_producer_ready(self, producer: RmqProducer):
         self.bar_producer = producer
 
+    def on_channel_closed(self):
+        super().on_channel_closed()
+        self.publish_foo_msg_task.cancel()
+        self.publish_bar_msg_task.cancel()
+
     def on_service_ready(self):
+        super().on_service_ready()
         LOGGER.info('Service is ready!')
-        asyncio.create_task(self.publish_foo_message())
-        asyncio.create_task(self.publish_bar_message())
+        publish_foo_msg_task = asyncio.create_task(self.publish_foo_message())
+        publish_bar_msg_task = asyncio.create_task(self.publish_bar_message())
 
     async def publish_foo_message(self):
         while True:
@@ -94,15 +103,7 @@ async def main():
         username=args.rmq_username,
         password=args.rmq_password
     )
-
-    try:
-        await service.run()
-    except asyncio.CancelledError as exc:
-        LOGGER.exception('Run cancelled.', exc_info=exc)
-    except Exception as exc:
-        LOGGER.exception('Unhandled exception.', exc_info=exc)
-    finally:
-        await service.stop()
+    await service.run()
 
 if __name__ == '__main__':
     asyncio.run(main())
