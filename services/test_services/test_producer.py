@@ -54,11 +54,6 @@ class TestProducer(RmqService):
     def on_bar_producer_ready(self, producer: RmqProducer):
         self.bar_producer = producer
 
-    def on_channel_closed(self):
-        super().on_channel_closed()
-        self.publish_foo_msg_task.cancel()
-        self.publish_bar_msg_task.cancel()
-
     def on_service_ready(self):
         super().on_service_ready()
         LOGGER.info('Service is ready!')
