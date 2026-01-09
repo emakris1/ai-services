@@ -71,7 +71,10 @@ class ActorCommandsService(RmqService):
         )
 
         self.ace = ActionCrossEncoder()
+
         self.speech_queue: asyncio.Queue[msg.SpeechRecognitionMessage] = asyncio.Queue()
+        self.process_speech_recognition_task: asyncio.Task | None = None
+
         self.voice_map: dict[ac.Actor, int] = {}
 
     def on_receive_speech_recognition(self, _, message: msg.SpeechRecognitionMessage):
@@ -105,7 +108,7 @@ class ActorCommandsService(RmqService):
 
     def on_service_ready(self):
         super().on_service_ready()
-        asyncio.create_task(self.process_speech_recognition())
+        self.process_speech_recognition_task = asyncio.create_task(self.process_speech_recognition())
 
     async def process_speech_recognition(self):
         while True:

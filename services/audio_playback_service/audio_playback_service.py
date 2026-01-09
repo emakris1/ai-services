@@ -66,7 +66,8 @@ class AudioPlaybackService(RmqService):
         self.audio_playback_queue: asyncio.Queue[AudioMessage] = asyncio.Queue()
         self.output_stream_buffer: np.ndarray[tuple[int, int], np.dtype[np.float32]] = np.empty(
             shape=(0, self.channels), dtype=self.dtype)
-
+        self.process_audio_playback_task: asyncio.Task | None = None
+        self.play_output_stream_task: asyncio.Task | None = None
         self.lock: Lock = Lock()
 
         self.audio_playback_consumer: RmqConsumer | None = None
@@ -90,8 +91,8 @@ class AudioPlaybackService(RmqService):
 
     def on_service_ready(self):
         super().on_service_ready()
-        asyncio.create_task(self.process_audio_playback())
-        asyncio.create_task(self.play_output_stream())
+        self.process_audio_playback_task = asyncio.create_task(self.process_audio_playback())
+        self.play_output_stream_task = asyncio.create_task(self.play_output_stream())
 
     def on_audio_playback_message(self, _unused_consumer: RmqConsumer, message: AudioMessage):
         try:

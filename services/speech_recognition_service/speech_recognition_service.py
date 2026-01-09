@@ -28,6 +28,7 @@ class SpeechRecognitionService(RmqService):
         super().__init__(host, port, username, password)
 
         self.audio_capture_queue: asyncio.Queue[AudioMessage] = asyncio.Queue()
+        self.process_audio_captures_task: asyncio.Task | None = None
 
         self.dtype: np.dtype[np.float32] = np.float32
         self.sample_rate: int = 16000 # most ASR libraries expect 16kHz audio
@@ -82,7 +83,7 @@ class SpeechRecognitionService(RmqService):
 
     def on_service_ready(self):
         super().on_service_ready()
-        asyncio.create_task(self.process_audio_captures())
+        self.process_audio_captures_task = asyncio.create_task(self.process_audio_captures())
 
     async def process_audio_captures(self):
             async for message in self.audio_capture_generator():

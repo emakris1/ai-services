@@ -27,6 +27,7 @@ class SpeechSynthesisService(RmqService):
         super().__init__(host, port, username, password)
 
         self.tts_request_queue: asyncio.Queue[TTSRequestMessage] = asyncio.Queue()
+        self.process_tts_requests_task: asyncio.Task | None = None
 
         self.channels: int = 1 # Kokoro only returns mono audio
         self.sample_rate: int = 24000 # Kokoro only returns 24kHz audio
@@ -120,7 +121,7 @@ class SpeechSynthesisService(RmqService):
 
     def on_service_ready(self):
         super().on_service_ready()
-        asyncio.create_task(self.process_tts_requests())
+        self.process_tts_requests_task = asyncio.create_task(self.process_tts_requests())
 
     async def process_tts_requests(self):
         async for tts_req_msg in self.tts_request_generator():

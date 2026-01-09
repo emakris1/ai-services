@@ -73,6 +73,7 @@ class AudioCaptureService(RmqService):
 
         self.event_loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
         self.input_stream_queue: asyncio.Queue[np.ndarray] = asyncio.Queue()
+        self.sample_input_stream_task: asyncio.Task | None = None
 
         self.lock: Lock = Lock()
         self.stop_listening_duration: float = 0.0
@@ -99,7 +100,7 @@ class AudioCaptureService(RmqService):
 
     def on_service_ready(self):
         super().on_service_ready()
-        asyncio.create_task(self.sample_input_stream())
+        self.sample_input_stream_task = asyncio.create_task(self.sample_input_stream())
 
     async def sample_input_stream(self):
         async for input_stream_data in self.input_stream_generator():
