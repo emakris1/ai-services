@@ -35,46 +35,34 @@ class SpeechSynthesisService(RmqService):
 
         self.command_config_consumer: RmqConsumer | None = None
         self.add_consumer(
-            RmqConsumer(
-                message_type=CommandConfigMessage,
-                connection_params=self.connection_params,
-                exchange_name='actor_commands',
-                exchange_type=ExchangeType.fanout,
-                on_consumer_ready_callback=self.on_command_config_consumer_ready,
-                on_message_callback=self.on_receive_command_config_message
-            )
+            message_type=CommandConfigMessage,
+            exchange_name='actor_commands',
+            exchange_type=ExchangeType.fanout,
+            on_consumer_ready_callback=self.on_command_config_consumer_ready,
+            on_message_callback=self.on_receive_command_config_message
         )
 
         self.tts_request_consumer: RmqConsumer | None = None
         self.add_consumer(
-            RmqConsumer(
-                message_type=TTSRequestMessage,
-                connection_params=self.connection_params,
-                exchange_name='tts_request',
-                exchange_type=ExchangeType.direct,
-                on_consumer_ready_callback=self.on_tts_request_consumer_ready,
-                on_message_callback=self.on_tts_request_message
-            )
+            message_type=TTSRequestMessage,
+            exchange_name='tts_request',
+            exchange_type=ExchangeType.direct,
+            on_consumer_ready_callback=self.on_tts_request_consumer_ready,
+            on_message_callback=self.on_tts_request_message
         )
 
         self.audio_playback_producer: RmqProducer | None = None
         self.add_producer(
-            RmqProducer(
-                connection_params=self.connection_params,
-                exchange_name='audio_playback',
-                exchange_type=ExchangeType.direct,
-                on_producer_ready_callback=self.on_audio_playback_producer_ready
-            )
+            exchange_name='audio_playback',
+            exchange_type=ExchangeType.direct,
+            on_producer_ready_callback=self.on_audio_playback_producer_ready
         )
 
         self.notification_producer: RmqProducer | None = None
         self.add_producer(
-            RmqProducer(
-                connection_params=self.connection_params,
-                exchange_name='gui_notifications',
-                exchange_type=ExchangeType.fanout,
-                on_producer_ready_callback=self.on_notifications_producer_ready
-            )
+            exchange_name='gui_notifications',
+            exchange_type=ExchangeType.fanout,
+            on_producer_ready_callback=self.on_notifications_producer_ready
         )
 
         self.model: kokoro.KModel = kokoro.KModel()
@@ -191,7 +179,15 @@ async def main():
         username=args.rmq_username,
         password=args.rmq_password,
     )
-    await service.run()
+
+    try:
+        await service.run()
+    except asyncio.CancelledError as exc:
+        LOGGER.exception('Run cancelled.', exc_info=exc)
+    except Exception as exc:
+        LOGGER.exception('Unhandled exception.', exc_info=exc)
+    finally:
+        await service.stop()
 
 if __name__ == '__main__':
     asyncio.run(main())

@@ -41,6 +41,12 @@ class RmqBase:
             self.connection_params.credentials.password
         )
 
+        if self.connection and self.connection.is_open:
+            LOGGER.debug('Connection is already open.')
+            return
+
+        self.pre_open_connection()
+
         self.connection = AsyncioConnection(
             parameters=self.connection_params,
             on_open_callback=self.on_connection_open,
@@ -59,6 +65,7 @@ class RmqBase:
             elif self.connection.is_closed:
                 LOGGER.debug('Connection is already closed.')
             else:
+                self.pre_close_connection()
                 self.connection.close()
                 LOGGER.debug('Connection closed.')
         else:
@@ -125,7 +132,6 @@ class RmqBase:
         self.run_should_stop_event.clear()
         self.stop_completed_event.clear()
 
-        self.pre_open_connection()
         self.open_connection()
 
         try:
@@ -167,7 +173,6 @@ class RmqBase:
         # Clear the event for this stop sequence; it will be set by on_connection_closed
         self.stop_completed_event.clear()
 
-        self.pre_close_connection()
         self.close_connection()
 
         LOGGER.info('Waiting for stop to complete...')

@@ -21,12 +21,12 @@ class RmqProducer(RmqBase, Generic[T]):
                  exchange_name: str,
                  exchange_type: ExchangeType,
                  routing_key: str = '',
-                 on_producer_ready_callback: Callable[['RmqProducer[T]'], None] = lambda _producer: None):
+                 on_producer_ready_callback: Callable[['RmqProducer'], None] = lambda _producer: None):
         super().__init__(connection_params, exchange_name, exchange_type, routing_key)
 
-        self.producer_tag = f'{self.exchange_name}:{self.routing_key}'
-
         self.on_producer_ready_callback = on_producer_ready_callback
+
+        self.producer_tag = f'{self.exchange_name}:{self.routing_key}'
 
         self.deliveries = {}
         self.acked = None

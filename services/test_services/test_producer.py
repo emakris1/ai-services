@@ -32,31 +32,29 @@ class TestProducer(RmqService):
 
         self.foo_producer: RmqProducer | None = None
         self.bar_producer: RmqProducer | None = None
+
         self.add_producer(
-            RmqProducer(
-                connection_params=self.connection_params,
-                exchange_name='foo',
-                routing_key=self.routing_key,
-                exchange_type=ExchangeType.direct,
-                on_producer_ready_callback=self.on_foo_producer_ready
-            )
+            exchange_name='foo',
+            routing_key=self.routing_key,
+            exchange_type=ExchangeType.direct,
+            on_producer_ready_callback=self.on_foo_producer_ready
         )
         self.add_producer(
-            RmqProducer(
-                connection_params=self.connection_params,
-                exchange_name='bar',
-                routing_key=self.routing_key,
-                exchange_type=ExchangeType.direct,
-                on_producer_ready_callback=self.on_bar_producer_ready
-            )
+            exchange_name='bar',
+            routing_key=self.routing_key,
+            exchange_type=ExchangeType.direct,
+            on_producer_ready_callback=self.on_bar_producer_ready
         )
 
     def on_foo_producer_ready(self, producer: RmqProducer):
         self.foo_producer = producer
-        asyncio.create_task(self.publish_foo_message())
 
     def on_bar_producer_ready(self, producer: RmqProducer):
         self.bar_producer = producer
+
+    def on_service_ready(self):
+        LOGGER.info('Service is ready!')
+        asyncio.create_task(self.publish_foo_message())
         asyncio.create_task(self.publish_bar_message())
 
     async def publish_foo_message(self):
@@ -96,7 +94,15 @@ async def main():
         username=args.rmq_username,
         password=args.rmq_password
     )
-    await service.run()
+
+    try:
+        await service.run()
+    except asyncio.CancelledError as exc:
+        LOGGER.exception('Run cancelled.', exc_info=exc)
+    except Exception as exc:
+        LOGGER.exception('Unhandled exception.', exc_info=exc)
+    finally:
+        await service.stop()
 
 if __name__ == '__main__':
     asyncio.run(main())

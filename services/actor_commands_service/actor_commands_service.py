@@ -34,56 +34,41 @@ class ActorCommandsService(RmqService):
         self.current_ai_actor = ac.Actor.GUNNER
 
         self.add_consumer(
-            RmqConsumer(
-                message_type=msg.SpeechRecognitionMessage,
-                connection_params=self.connection_params,
-                exchange_name='speech_recognition',
-                routing_key=self.routing_key,
-                exchange_type=ExchangeType.direct,
-                on_message_callback=self.on_receive_speech_recognition,
-            )
+            message_type=msg.SpeechRecognitionMessage,
+            exchange_name='speech_recognition',
+            routing_key=self.routing_key,
+            exchange_type=ExchangeType.direct,
+            on_message_callback=self.on_receive_speech_recognition,
         )
 
         self.add_consumer(
-            RmqConsumer(
-                message_type=msg.CommandConfigMessage,
-                connection_params=self.connection_params,
-                exchange_name='actor_commands',
-                exchange_type=ExchangeType.fanout,
-                on_message_callback=self.on_receive_command_config
-            )
+            message_type=msg.CommandConfigMessage,
+            exchange_name='actor_commands',
+            exchange_type=ExchangeType.fanout,
+            on_message_callback=self.on_receive_command_config
         )
 
         self.add_consumer(
-            RmqConsumer(
-                message_type=msg.CurrentActorMessage,
-                connection_params=self.connection_params,
-                exchange_name='current_actor',
-                routing_key=self.routing_key,
-                exchange_type=ExchangeType.direct,
-                on_message_callback=self.on_receive_current_actor
-            )
+            message_type=msg.CurrentActorMessage,
+            exchange_name='current_actor',
+            routing_key=self.routing_key,
+            exchange_type=ExchangeType.direct,
+            on_message_callback=self.on_receive_current_actor
         )
 
         self.action_recognition_producer: RmqProducer | None = None
         self.add_producer(
-            RmqProducer(
-                connection_params=self.connection_params,
-                exchange_name='action_recognition',
-                exchange_type=ExchangeType.direct,
-                routing_key='crew_member_service',
-                on_producer_ready_callback=self.on_action_recognition_producer_ready
-            )
+            exchange_name='action_recognition',
+            exchange_type=ExchangeType.direct,
+            routing_key='crew_member_service',
+            on_producer_ready_callback=self.on_action_recognition_producer_ready
         )
 
         self.tts_request_producer: RmqProducer | None = None
         self.add_producer(
-            RmqProducer(
-                connection_params=self.connection_params,
-                exchange_name='tts_request',
-                exchange_type=ExchangeType.direct,
-                on_producer_ready_callback=self.on_tts_request_producer_ready
-            )
+            exchange_name='tts_request',
+            exchange_type=ExchangeType.direct,
+            on_producer_ready_callback=self.on_tts_request_producer_ready
         )
 
         self.ace = ActionCrossEncoder()
@@ -170,7 +155,15 @@ async def main():
         username=args.rmq_username,
         password=args.rmq_password
     )
-    await service.run()
+
+    try:
+        await service.run()
+    except asyncio.CancelledError as exc:
+        LOGGER.exception('Run cancelled.', exc_info=exc)
+    except Exception as exc:
+        LOGGER.exception('Unhandled exception.', exc_info=exc)
+    finally:
+        await service.stop()
 
 if __name__ == '__main__':
     asyncio.run(main())

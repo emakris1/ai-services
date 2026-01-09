@@ -25,7 +25,7 @@ class RmqConsumer(RmqBase, Generic[T]):
                  exchange_type: ExchangeType,
                  queue_name: str = '',
                  routing_key: str = '',
-                 on_consumer_ready_callback: Callable[['RmqConsumer[T]'], None] = lambda _consumer: None,
+                 on_consumer_ready_callback: Callable[['RmqConsumer'], None] = lambda _consumer: None,
                  on_message_callback: Callable[['RmqConsumer[T]', T], None] = lambda _consumer, _message: None):
         super().__init__(connection_params, exchange_name, exchange_type, routing_key)
 
@@ -35,7 +35,7 @@ class RmqConsumer(RmqBase, Generic[T]):
         self.on_consumer_ready_callback = on_consumer_ready_callback
         self.on_message_callback = on_message_callback
 
-        self.consumer_tag = None
+        self.consumer_tag = f'{self.exchange_name}:{self.routing_key}:{self.queue_name}'
 
         self.prefetch_count = 0
         self.prefetch_size = 0
@@ -92,11 +92,15 @@ class RmqConsumer(RmqBase, Generic[T]):
         LOGGER.debug('Starting message consumption...')
 
         self.channel.add_on_cancel_callback(self.on_consumer_cancelled)
-        self.consumer_tag = self.channel.basic_consume(
+        consumer_tag = self.channel.basic_consume(
             queue=self.queue_name,
             on_message_callback=self.on_message,
-            consumer_tag=f'{self.exchange_name}:{self.routing_key}:{self.queue_name}'
+            consumer_tag=self.consumer_tag
         )
+        if consumer_tag != self.consumer_tag:
+            LOGGER.error('Consumer tag mismatch! Expected %s but got %s!', self.consumer_tag, consumer_tag)
+            self.channel.basic_cancel(consumer_tag, self.on_cancel_ok)
+            return
 
         LOGGER.info('Consumer %s is ready to consume messages!', self.consumer_tag)
         self.on_consumer_ready_callback(self)

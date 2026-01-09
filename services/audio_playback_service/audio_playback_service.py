@@ -71,24 +71,18 @@ class AudioPlaybackService(RmqService):
 
         self.audio_playback_consumer: RmqConsumer | None = None
         self.add_consumer(
-            RmqConsumer(
-                message_type=AudioMessage,
-                connection_params=self.connection_params,
-                exchange_name='audio_playback',
-                exchange_type=ExchangeType.direct,
-                on_consumer_ready_callback=self.on_audio_playback_consumer_ready,
-                on_message_callback=self.on_audio_playback_message
-            )
+            message_type=AudioMessage,
+            exchange_name='audio_playback',
+            exchange_type=ExchangeType.direct,
+            on_consumer_ready_callback=self.on_audio_playback_consumer_ready,
+            on_message_callback=self.on_audio_playback_message
         )
 
         self.stop_listening_producer: RmqProducer | None = None
         self.add_producer(
-            RmqProducer(
-                on_producer_ready_callback=self.on_stop_listening_producer_ready,
-                connection_params=self.connection_params,
-                exchange_name='stop_listening',
-                exchange_type=ExchangeType.direct
-            )
+            exchange_name='stop_listening',
+            exchange_type=ExchangeType.direct,
+            on_producer_ready_callback = self.on_stop_listening_producer_ready
         )
 
     def on_audio_playback_consumer_ready(self, consumer: RmqConsumer):
@@ -218,7 +212,15 @@ async def main():
         device_index=args.device_index,
         sample_rate=args.sample_rate
     )
-    await service.run()
+
+    try:
+        await service.run()
+    except asyncio.CancelledError as exc:
+        LOGGER.exception('Run cancelled.', exc_info=exc)
+    except Exception as exc:
+        LOGGER.exception('Unhandled exception.', exc_info=exc)
+    finally:
+        await service.stop()
 
 if __name__ == '__main__':
     asyncio.run(main())
