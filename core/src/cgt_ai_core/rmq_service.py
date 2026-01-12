@@ -44,6 +44,9 @@ class RmqService:
         self.stop_running_event: asyncio.Event = asyncio.Event()
         self.connection_closed_event: asyncio.Event = asyncio.Event()
 
+        self.configure_channel_task: asyncio.Task | None = None
+        self.stop_task: asyncio.Task | None = None
+
         self.connection: RmqConnection = RmqConnection(
             host=host,
             port=port,
@@ -156,21 +159,19 @@ class RmqService:
 
         LOGGER.info('Stop completed.')
 
-    async def declare_exchanges(self) -> None:
-        LOGGER.debug('Initializing all consumers and producers...')
+    async def configure_channel(self) -> None:
+        LOGGER.debug('Configuring channel with all required exchanges and queues for all consumers and producers...')
         for consumer_data in self.consumers.values():
-            consumer_data.reference.channel = self.connection.channel
-            consumer_data.reference.declare_exchange()
+            consumer_data.reference.configure_channel(self.connection.channel)
         for producer_data in self.producers.values():
-            producer_data.reference.channel = self.connection.channel
-            producer_data.reference.declare_exchange()
+            producer_data.reference.configure_channel(self.connection.channel)
 
-        LOGGER.debug('Waiting for all consumers and producers to finish initializing...')
+        LOGGER.debug('Waiting for all consumers and producers to finish configuring channel...')
         consumer_wait_coros = [consumer_data.ready_event.wait() for consumer_data in self.consumers.values()]
         producer_wait_coros = [producer_data.ready_event.wait() for producer_data in self.producers.values()]
         await asyncio.gather(*consumer_wait_coros, *producer_wait_coros)
 
-        LOGGER.debug('All consumers and producers initialized!')
+        LOGGER.debug('Channel configured!')
         self.on_service_ready()
 
     def on_connection_opened(self) -> None:
@@ -179,10 +180,10 @@ class RmqService:
     def on_connection_closed(self) -> None:
         self.connection_closed_event.set()
         if not self.is_stopping:
-            asyncio.create_task(self.stop())
+            self.stop_task = asyncio.create_task(self.stop())
 
     def on_channel_opened(self) -> None:
-        asyncio.create_task(self.declare_exchanges())
+        self.configure_channel_task = asyncio.create_task(self.configure_channel())
 
     def on_channel_closed(self) -> None:
         pass

@@ -21,6 +21,10 @@ class RmqBase(ABC):
 
         self.channel: Channel | None = None
 
+    def configure_channel(self, channel: Channel):
+        self.channel = channel
+        self.declare_exchange()
+
     def declare_exchange(self) -> None:
         LOGGER.debug('Declaring exchange with name "%s" and type "%s"...', self.exchange_name, self.exchange_type)
         self.channel.exchange_declare(
