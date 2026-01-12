@@ -14,12 +14,16 @@ A collection of AI services and service infrastructure designed for use with the
 ## Setup
 1. Install all prerequisites
     1. Follow the [setup instructions](https://docs.flutter.dev/install/manual#install-flutter) for a manual Flutter installation.
-2. If you have not previously run PowerShell scripts in your environment before,
+2. [Add a user](https://www.rabbitmq.com/docs/access-control#adding-a-user) to your RabbitMQ server with the credentials
+   specified in `core/src/cgt_ai_core/rmq_default_config.py` and
+   [read/write permissions](https://www.rabbitmq.com/docs/access-control#grant-permissions) on the `/` virtual host
+   (or the virtual host of your choice).
+3. If you have not previously run PowerShell scripts in your environment before,
    run the following command in an admin-elevated PowerShell terminal to enable PowerShell script execution:
    ```
    Set-ExecutionPolicy RemoteSigned
    ```
-3. Run `setup.ps1` to generate virtual environments and download dependencies with **uv**, and build the **Flutter** UI.
+4. Run `setup.ps1` to generate virtual environments and download dependencies with **uv**, and build the **Flutter** UI.
 
 ## Reinstalling Core
 Since the **cgt-ai-core** library package is not an editable dependency, any source changes you make will not be
