@@ -1,5 +1,5 @@
 # ACV-CGT-AI
-A collection of AI services and service infrastructure designed for use with the Crew Gunnery Trainer.
+A collection of AI services and service infrastructure designed for use with the ACV Crew Gunnery Trainer.
 
 ## Prerequisites
 - [Python v3.13.9](https://www.python.org/ftp/python/3.13.9/python-3.13.9-amd64.exe)
