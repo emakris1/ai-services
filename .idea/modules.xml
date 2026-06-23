@@ -3,13 +3,13 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/CGT-AI.iml" filepath="$PROJECT_DIR$/.idea/CGT-AI.iml" />
-      <module fileurl="file://$PROJECT_DIR$/services/actor_commands_service/.idea/actor_commands_service.iml" filepath="$PROJECT_DIR$/services/actor_commands_service/.idea/actor_commands_service.iml" />
-      <module fileurl="file://$PROJECT_DIR$/services/audio_capture_service/.idea/audio_capture_service.iml" filepath="$PROJECT_DIR$/services/audio_capture_service/.idea/audio_capture_service.iml" />
-      <module fileurl="file://$PROJECT_DIR$/services/audio_playback_service/.idea/audio_playback_service.iml" filepath="$PROJECT_DIR$/services/audio_playback_service/.idea/audio_playback_service.iml" />
-      <module fileurl="file://$PROJECT_DIR$/core/.idea/core.iml" filepath="$PROJECT_DIR$/core/.idea/core.iml" />
-      <module fileurl="file://$PROJECT_DIR$/services/speech_recognition_service/.idea/speech_recognition_service.iml" filepath="$PROJECT_DIR$/services/speech_recognition_service/.idea/speech_recognition_service.iml" />
-      <module fileurl="file://$PROJECT_DIR$/services/speech_synthesis_service/.idea/speech_synthesis_service.iml" filepath="$PROJECT_DIR$/services/speech_synthesis_service/.idea/speech_synthesis_service.iml" />
-      <module fileurl="file://$PROJECT_DIR$/services/test_services/.idea/test_services.iml" filepath="$PROJECT_DIR$/services/test_services/.idea/test_services.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/cgt-ai-actor-commands-service.iml" filepath="$PROJECT_DIR$/.idea/cgt-ai-actor-commands-service.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/cgt-ai-audio-capture-service.iml" filepath="$PROJECT_DIR$/.idea/cgt-ai-audio-capture-service.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/cgt-ai-audio-playback-service.iml" filepath="$PROJECT_DIR$/.idea/cgt-ai-audio-playback-service.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/cgt-ai-core.iml" filepath="$PROJECT_DIR$/.idea/cgt-ai-core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/cgt-ai-speech-recognition-service.iml" filepath="$PROJECT_DIR$/.idea/cgt-ai-speech-recognition-service.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/cgt-ai-speech-synthesis-service.iml" filepath="$PROJECT_DIR$/.idea/cgt-ai-speech-synthesis-service.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/cgt-ai-test-services.iml" filepath="$PROJECT_DIR$/.idea/cgt-ai-test-services.iml" />
     </modules>
   </component>
 </project>

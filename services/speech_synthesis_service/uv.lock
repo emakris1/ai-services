@@ -107,7 +107,7 @@ requires-dist = [
 ]
 
 [[package]]
-name = "cgt-ai-speech-recognition-service"
+name = "cgt-ai-speech-synthesis-service"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

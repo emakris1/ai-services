@@ -1,5 +1,5 @@
 [project]
-name = "cgt-ai-speech-recognition-service"
+name = "cgt-ai-speech-synthesis-service"
 version = "0.1.0"
 description = "Consumes text from messages, synthesizes speech for that text, and publishes messages containing that speech to a message queue"
 requires-python = ">=3.13"
