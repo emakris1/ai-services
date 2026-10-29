@@ -6,6 +6,7 @@
     </content>
     <orderEntry type="jdk" jdkName="uv (test_services)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="ai-core" exported="" />
+    <orderEntry type="module" module-name="ai-common" exported="" />
+    <orderEntry type="module" module-name="ai-rmq" exported="" />
   </component>
 </module>

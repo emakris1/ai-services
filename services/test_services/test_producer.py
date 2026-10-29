@@ -6,10 +6,10 @@ from datetime import datetime
 
 from pika.exchange_type import ExchangeType
 
-from ai_core.log_config import LOG_FORMAT
-from ai_core.rmq_producer import RmqProducer
-from ai_core.rmq_service import RmqService
-from ai_core.service_arg_parser import get_service_arg_parser
+from ai_common.log_config import LOG_FORMAT
+from ai_common.service_arg_parser import get_service_arg_parser
+from ai_rmq.producer import RmqProducer
+from ai_rmq.service import RmqService
 
 from test_messages import FooMessage, BarMessage
 

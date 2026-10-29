@@ -1,11 +1,13 @@
 [project]
 name = "ai-test-services"
 version = "0.1.0"
-description = "Test services that showcase utilization of the CGI AI Core infrastructure"
+description = "Test services that showcase utilization of the AI service infrastructure"
 requires-python = ">=3.13"
 dependencies = [
-    "ai-core",
+    "ai-common",
+    "ai-rmq",
 ]
 
 [tool.uv.sources]
-ai-core = { path = "../../core" }
+ai-common = { path = "../../common" }
+ai-rmq = { path = "../../rmq" }

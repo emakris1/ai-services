@@ -8,12 +8,12 @@ from threading import Lock
 from pika.exchange_type import ExchangeType
 from typing import Any
 
-from ai_core.log_config import LOG_FORMAT
-from ai_core.messages import AudioMessage, StopListeningMessage
-from ai_core.rmq_consumer import RmqConsumer
-from ai_core.rmq_producer import RmqProducer
-from ai_core.rmq_service import RmqService
-from ai_core.service_arg_parser import get_service_arg_parser
+from ai_common.log_config import LOG_FORMAT
+from ai_common.messages import AudioMessage, StopListeningMessage
+from ai_common.service_arg_parser import get_service_arg_parser
+from ai_rmq.consumer import RmqConsumer
+from ai_rmq.producer import RmqProducer
+from ai_rmq.service import RmqService
 
 LOGGER = logging.getLogger(__name__)
 

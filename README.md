@@ -15,7 +15,7 @@ A collection of AI services and service infrastructure for use with interactive 
 1. Install all prerequisites
     1. Follow the [setup instructions](https://docs.flutter.dev/install/manual#install-flutter) for a manual Flutter installation.
 2. [Add a user](https://www.rabbitmq.com/docs/access-control#adding-a-user) to your RabbitMQ server with the credentials
-   specified in `core/src/ai_core/rmq_default_config.py` and
+   specified in `rmq/src/ai_rmq/default_config.py` and
    [read/write permissions](https://www.rabbitmq.com/docs/access-control#grant-permissions) on the `/` virtual host
    (or the virtual host of your choice).
 3. If you have not previously run PowerShell scripts in your environment before,
@@ -25,16 +25,26 @@ A collection of AI services and service infrastructure for use with interactive 
    ```
 4. Run `setup.ps1` to generate virtual environments and download dependencies with **uv**, and build the **Flutter** UI.
 
-## Reinstalling Core
-Since the **ai-core** library package is not an editable dependency, any source changes you make will not be
-reflected in dependent service applications until the package is reinstalled.
+## Shared Packages
+The services are built on two shared library packages:
+- **ai-rmq** (`rmq/`) - RabbitMQ infrastructure: connections, consumers, producers, the `RmqService` that manages
+  them, message serialization hooks, and default connection configuration.
+- **ai-common** (`common/`) - Messages, enums, logging configuration, and utilities shared by multiple services.
+  Depends on **ai-rmq**.
 
-The simplest way to fix this is to force **uv** to reinstall the **ai-core** package in the given service project:
+## Reinstalling Shared Packages
+Since the **ai-rmq** and **ai-common** library packages are not editable dependencies, any source changes you make
+will not be reflected in dependent service applications until the packages are reinstalled.
+
+The simplest way to fix this is to force **uv** to reinstall the packages in the given service project:
 ```
 cd services\<service>
-uv sync --reinstall-package ai-core
+uv sync --reinstall-package ai-common --reinstall-package ai-rmq
 ```
 Alternatively, you can run `services\uv-sync-services.ps1`, which does this for all services.
+
+Since **ai-common** depends on **ai-rmq**, changes to **ai-rmq** also require reinstalling it in the **ai-common**
+project, which `common\uv-sync-common.ps1` does.
 
 ## Rebuilding the UI
 To rebuild the UI, run `ui\build-ui.ps1`.

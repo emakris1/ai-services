@@ -6,7 +6,8 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/ai-actor-commands-service.iml" filepath="$PROJECT_DIR$/.idea/ai-actor-commands-service.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/ai-audio-capture-service.iml" filepath="$PROJECT_DIR$/.idea/ai-audio-capture-service.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/ai-audio-playback-service.iml" filepath="$PROJECT_DIR$/.idea/ai-audio-playback-service.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/ai-core.iml" filepath="$PROJECT_DIR$/.idea/ai-core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/ai-common.iml" filepath="$PROJECT_DIR$/.idea/ai-common.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/ai-rmq.iml" filepath="$PROJECT_DIR$/.idea/ai-rmq.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/ai-speech-recognition-service.iml" filepath="$PROJECT_DIR$/.idea/ai-speech-recognition-service.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/ai-speech-synthesis-service.iml" filepath="$PROJECT_DIR$/.idea/ai-speech-synthesis-service.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/ai-test-services.iml" filepath="$PROJECT_DIR$/.idea/ai-test-services.iml" />

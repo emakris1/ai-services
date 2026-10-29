@@ -4,10 +4,12 @@ version = "0.1.0"
 description = "Captures raw microphone audio samples, packages the samples into a defined message structure with sampling metadata, and publishes those messages to a message queue"
 requires-python = ">=3.13"
 dependencies = [
-    "ai-core",
+    "ai-common",
+    "ai-rmq",
     "numpy>=2.3.5",
     "sounddevice>=0.5.3",
 ]
 
 [tool.uv.sources]
-ai-core = { path = "../../core" }
+ai-common = { path = "../../common" }
+ai-rmq = { path = "../../rmq" }

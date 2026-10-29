@@ -4,7 +4,8 @@ version = "0.1.0"
 description = "Converts spoken phrases to embeddings, maps those embeddings to preconfigured actions."
 requires-python = ">=3.13"
 dependencies = [
-    "ai-core",
+    "ai-common",
+    "ai-rmq",
     "sentence-transformers>=5.1.2",
 ]
 
@@ -15,7 +16,8 @@ override-dependencies = [
 ]
 
 [tool.uv.sources]
-ai-core = { path = "../../core" }
+ai-common = { path = "../../common" }
+ai-rmq = { path = "../../rmq" }
 torch = [
     { index = "pytorch-cu129"},
 ]

@@ -4,6 +4,6 @@ if (-not (Get-Command uv -ErrorAction SilentlyContinue))
     exit 127
 }
 
-$CoreDir = Get-Item -Path $PSScriptRoot
-Write-Host "Syncing packages for $($CoreDir.Name)" -ForegroundColor Cyan
-uv sync --directory $CoreDir.FullName
+$PackageDir = Get-Item -Path $PSScriptRoot
+Write-Host "Syncing packages for $($PackageDir.Name)" -ForegroundColor Cyan
+uv sync --directory $PackageDir.FullName

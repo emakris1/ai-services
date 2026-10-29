@@ -1,8 +1,8 @@
 import re
 import string
 
-from ai_core.actor_command_enums import Actor, Action
-from ai_core.messages import Command
+from ai_common.enums.actor_commands import Actor, Action
+from ai_common.messages import Command
 from transformers import pipeline
 
 

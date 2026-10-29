@@ -6,7 +6,7 @@ from pika.channel import Channel
 from pika.credentials import PlainCredentials
 from typing import Callable
 
-from ai_core.rmq_default_config import DefaultConnectionParameters
+from ai_rmq.default_config import DefaultConnectionParameters
 
 LOGGER = logging.getLogger(__name__)
 

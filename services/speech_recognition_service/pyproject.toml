@@ -4,7 +4,8 @@ version = "0.1.0"
 description = "Consumes audio capture messages to deciper the text of the speech in those audio samples, and publishes messages containing that text to a message queue" 
 requires-python = ">=3.13"
 dependencies = [
-    "ai-core",
+    "ai-common",
+    "ai-rmq",
     "faster-whisper>=1.2.0",
     "numpy>=2.3.5",
     "resampy>=0.4.3",
@@ -18,7 +19,8 @@ override-dependencies = [
 ]
 
 [tool.uv.sources]
-ai-core = { path = "../../core" }
+ai-common = { path = "../../common" }
+ai-rmq = { path = "../../rmq" }
 torch = [
     { index = "pytorch-cu129"},
 ]
