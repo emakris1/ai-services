@@ -8,7 +8,7 @@ dependencies = [
     "ai-rmq",
     "en-core-web-sm",
     "kokoro>=0.9.4",
-    "numpy>=2.3.5",
+    "numpy>=2.5.4",
 ]
 
 [tool.uv]

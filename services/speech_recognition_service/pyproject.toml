@@ -6,10 +6,10 @@ requires-python = ">=3.13"
 dependencies = [
     "ai-common",
     "ai-rmq",
-    "faster-whisper>=1.2.0",
-    "numpy>=2.3.5",
+    "faster-whisper>=1.2.1",
+    "numpy>=2.5.4",
     "resampy>=0.4.3",
-    "silero-vad>=6.2.0"
+    "silero-vad>=6.2.3"
 ]
 
 [tool.uv]

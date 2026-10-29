@@ -6,9 +6,9 @@ requires-python = ">=3.13"
 dependencies = [
     "ai-common",
     "ai-rmq",
-    "numpy>=2.3.5",
+    "numpy>=2.5.4",
     "resampy>=0.4.3",
-    "sounddevice>=0.5.3",
+    "sounddevice>=0.5.6",
 ]
 
 [tool.uv.sources]

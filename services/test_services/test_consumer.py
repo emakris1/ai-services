@@ -1,4 +1,3 @@
-import asyncio
 import logging
 
 from pika.exchange_type import ExchangeType
@@ -6,6 +5,7 @@ from pika.exchange_type import ExchangeType
 from ai_common.log_config import LOG_FORMAT
 from ai_common.service_arg_parser import get_service_arg_parser
 from ai_rmq.consumer import RmqConsumer
+from ai_rmq.runner import run_service
 from ai_rmq.service import RmqService
 
 from test_messages import FooMessage, BarMessage
@@ -79,4 +79,4 @@ async def main():
     await service.run()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    run_service(main())

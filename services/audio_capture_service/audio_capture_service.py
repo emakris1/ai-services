@@ -13,6 +13,7 @@ from ai_common.messages import AudioMessage, StopListeningMessage
 from ai_common.service_arg_parser import get_service_arg_parser
 from ai_rmq.consumer import RmqConsumer
 from ai_rmq.producer import RmqProducer
+from ai_rmq.runner import run_service
 from ai_rmq.service import RmqService
 
 LOGGER = logging.getLogger(__name__)
@@ -198,4 +199,4 @@ async def main():
     await service.run()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    run_service(main())
