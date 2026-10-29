@@ -8,8 +8,8 @@ from pika.spec import BasicProperties
 from pika.spec import Basic
 from typing import Callable, Generic, Type, TypeVar
 
-from cgt_ai_core.messages import dec_hook
-from cgt_ai_core.rmq_base import RmqBase
+from ai_core.messages import dec_hook
+from ai_core.rmq_base import RmqBase
 
 LOGGER = logging.getLogger(__name__)
 

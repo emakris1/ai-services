@@ -1,13 +1,13 @@
 [project]
-name = "cgt-ai-audio-capture-service"
+name = "ai-audio-capture-service"
 version = "0.1.0"
 description = "Captures raw microphone audio samples, packages the samples into a defined message structure with sampling metadata, and publishes those messages to a message queue"
 requires-python = ">=3.13"
 dependencies = [
-    "cgt-ai-core",
+    "ai-core",
     "numpy>=2.3.5",
     "sounddevice>=0.5.3",
 ]
 
 [tool.uv.sources]
-cgt-ai-core = { path = "../../core" }
+ai-core = { path = "../../core" }

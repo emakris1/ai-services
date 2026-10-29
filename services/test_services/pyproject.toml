@@ -1,11 +1,11 @@
 [project]
-name = "cgt-ai-test-services"
+name = "ai-test-services"
 version = "0.1.0"
 description = "Test services that showcase utilization of the CGI AI Core infrastructure"
 requires-python = ">=3.13"
 dependencies = [
-    "cgt-ai-core",
+    "ai-core",
 ]
 
 [tool.uv.sources]
-cgt-ai-core = { path = "../../core" }
+ai-core = { path = "../../core" }

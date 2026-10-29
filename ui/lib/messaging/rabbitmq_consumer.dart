@@ -18,7 +18,7 @@ class RabbitMQConsumer {
     required this.onMessage,
     String host = 'localhost',
     int port = 5672,
-    String username = 'cgt-ai',
+    String username = 'ai',
     String password = '1q2w3e4r!Q@W#E\$R',
   }) {
     _client = Client(

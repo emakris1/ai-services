@@ -4,9 +4,9 @@ import numpy as np
 
 from typing import Any, Type
 
-import cgt_ai_core.actor_command_enums as ac
-import cgt_ai_core.tts_enums as tts
-import cgt_ai_core.notification_enums as notifications
+import ai_core.actor_command_enums as ac
+import ai_core.tts_enums as tts
+import ai_core.notification_enums as notifications
 
 
 class AudioMessage(msgspec.Struct):

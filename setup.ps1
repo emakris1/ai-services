@@ -5,16 +5,16 @@ param
 
 if ($DeleteAceCache)
 {
-    $CachePath = "$env:LOCALAPPDATA\cgt_ace"
+    $CachePath = "$env:LOCALAPPDATA\ace"
     $CacheDir = Get-Item -Path $CachePath -ErrorAction SilentlyContinue
     if ($CacheDir)
     {
-        Write-Host "Deleting CGT ACE cache at $CacheDir" -ForegroundColor Yellow
+        Write-Host "Deleting ACE cache at $CacheDir" -ForegroundColor Yellow
         Remove-Item -Recurse -Force -Path $CacheDir -ErrorAction SilentlyContinue
     }
     else
     {
-        Write-Host "No CGT ACE cache to delete at $CachePath" -ForegroundColor Yellow
+        Write-Host "No ACE cache to delete at $CachePath" -ForegroundColor Yellow
     }
 }
 

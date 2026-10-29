@@ -48,11 +48,11 @@ wheels = [
 ]
 
 [[package]]
-name = "cgt-ai-audio-playback-service"
+name = "ai-audio-playback-service"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "cgt-ai-core" },
+    { name = "ai-core" },
     { name = "numpy" },
     { name = "resampy" },
     { name = "sounddevice" },
@@ -60,14 +60,14 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cgt-ai-core", directory = "../../core" },
+    { name = "ai-core", directory = "../../core" },
     { name = "numpy", specifier = ">=2.3.5" },
     { name = "resampy", specifier = ">=0.4.3" },
     { name = "sounddevice", specifier = ">=0.5.3" },
 ]
 
 [[package]]
-name = "cgt-ai-core"
+name = "ai-core"
 version = "0.1.0"
 source = { directory = "../../core" }
 dependencies = [

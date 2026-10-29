@@ -67,7 +67,7 @@ wheels = [
 ]
 
 [[package]]
-name = "cgt-ai-core"
+name = "ai-core"
 version = "0.1.0"
 source = { directory = "../../core" }
 dependencies = [
@@ -86,11 +86,11 @@ requires-dist = [
 ]
 
 [[package]]
-name = "cgt-ai-speech-recognition-service"
+name = "ai-speech-recognition-service"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "cgt-ai-core" },
+    { name = "ai-core" },
     { name = "faster-whisper" },
     { name = "numpy" },
     { name = "resampy" },
@@ -99,7 +99,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cgt-ai-core", directory = "../../core" },
+    { name = "ai-core", directory = "../../core" },
     { name = "faster-whisper", specifier = ">=1.2.0" },
     { name = "numpy", specifier = ">=2.3.5" },
     { name = "resampy", specifier = ">=0.4.3" },

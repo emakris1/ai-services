@@ -1,10 +1,10 @@
 [project]
-name = "cgt-ai-actor-commands-service"
+name = "ai-actor-commands-service"
 version = "0.1.0"
 description = "Converts spoken phrases to embeddings, maps those embeddings to preconfigured actions."
 requires-python = ">=3.13"
 dependencies = [
-    "cgt-ai-core",
+    "ai-core",
     "sentence-transformers>=5.1.2",
 ]
 
@@ -15,7 +15,7 @@ override-dependencies = [
 ]
 
 [tool.uv.sources]
-cgt-ai-core = { path = "../../core" }
+ai-core = { path = "../../core" }
 torch = [
     { index = "pytorch-cu129"},
 ]

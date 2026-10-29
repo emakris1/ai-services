@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from pika.exchange_type import ExchangeType
 from typing import Callable, Type, TypeVar
 
-from cgt_ai_core.rmq_connection import RmqConnection
-from cgt_ai_core.rmq_consumer import RmqConsumer
-from cgt_ai_core.rmq_producer import RmqProducer
+from ai_core.rmq_connection import RmqConnection
+from ai_core.rmq_consumer import RmqConsumer
+from ai_core.rmq_producer import RmqProducer
 
 LOGGER = logging.getLogger(__name__)
 

@@ -5,15 +5,15 @@ import numpy as np
 
 from pika.exchange_type import ExchangeType
 
-import cgt_ai_core.tts_enums as tts
-import cgt_ai_core.notification_enums as notifications
+import ai_core.tts_enums as tts
+import ai_core.notification_enums as notifications
 
-from cgt_ai_core.log_config import LOG_FORMAT
-from cgt_ai_core.messages import AudioMessage, CommandConfigMessage, NotificationMessage, TTSRequestMessage
-from cgt_ai_core.rmq_consumer import RmqConsumer
-from cgt_ai_core.rmq_producer import RmqProducer
-from cgt_ai_core.rmq_service import RmqService
-from cgt_ai_core.service_arg_parser import get_service_arg_parser
+from ai_core.log_config import LOG_FORMAT
+from ai_core.messages import AudioMessage, CommandConfigMessage, NotificationMessage, TTSRequestMessage
+from ai_core.rmq_consumer import RmqConsumer
+from ai_core.rmq_producer import RmqProducer
+from ai_core.rmq_service import RmqService
+from ai_core.service_arg_parser import get_service_arg_parser
 
 LOGGER = logging.getLogger(__name__)
 

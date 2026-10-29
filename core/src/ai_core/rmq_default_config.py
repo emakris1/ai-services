@@ -3,7 +3,7 @@ from pika.credentials import PlainCredentials
 
 DefaultHost = 'localhost'
 DefaultPort = 5672
-DefaultUsername = 'cgt-ai'
+DefaultUsername = 'ai'
 DefaultPassword = '1q2w3e4r!Q@W#E$R'
 
 DefaultConnectionParameters = ConnectionParameters(

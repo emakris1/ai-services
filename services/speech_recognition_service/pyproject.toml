@@ -1,10 +1,10 @@
 [project]
-name = "cgt-ai-speech-recognition-service"
+name = "ai-speech-recognition-service"
 version = "0.1.0"
 description = "Consumes audio capture messages to deciper the text of the speech in those audio samples, and publishes messages containing that text to a message queue" 
 requires-python = ">=3.13"
 dependencies = [
-    "cgt-ai-core",
+    "ai-core",
     "faster-whisper>=1.2.0",
     "numpy>=2.3.5",
     "resampy>=0.4.3",
@@ -18,7 +18,7 @@ override-dependencies = [
 ]
 
 [tool.uv.sources]
-cgt-ai-core = { path = "../../core" }
+ai-core = { path = "../../core" }
 torch = [
     { index = "pytorch-cu129"},
 ]

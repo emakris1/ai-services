@@ -1,5 +1,5 @@
-# ACV-CGT-AI
-A collection of AI services and service infrastructure designed for use with the ACV Crew Gunnery Trainer.
+# AI-Services
+A collection of AI services and service infrastructure for use with interactive training applications.
 
 ## Prerequisites
 - [Python v3.13.9](https://www.python.org/ftp/python/3.13.9/python-3.13.9-amd64.exe)
@@ -15,7 +15,7 @@ A collection of AI services and service infrastructure designed for use with the
 1. Install all prerequisites
     1. Follow the [setup instructions](https://docs.flutter.dev/install/manual#install-flutter) for a manual Flutter installation.
 2. [Add a user](https://www.rabbitmq.com/docs/access-control#adding-a-user) to your RabbitMQ server with the credentials
-   specified in `core/src/cgt_ai_core/rmq_default_config.py` and
+   specified in `core/src/ai_core/rmq_default_config.py` and
    [read/write permissions](https://www.rabbitmq.com/docs/access-control#grant-permissions) on the `/` virtual host
    (or the virtual host of your choice).
 3. If you have not previously run PowerShell scripts in your environment before,
@@ -26,13 +26,13 @@ A collection of AI services and service infrastructure designed for use with the
 4. Run `setup.ps1` to generate virtual environments and download dependencies with **uv**, and build the **Flutter** UI.
 
 ## Reinstalling Core
-Since the **cgt-ai-core** library package is not an editable dependency, any source changes you make will not be
+Since the **ai-core** library package is not an editable dependency, any source changes you make will not be
 reflected in dependent service applications until the package is reinstalled.
 
-The simplest way to fix this is to force **uv** to reinstall the **cgt-ai-core** package in the given service project:
+The simplest way to fix this is to force **uv** to reinstall the **ai-core** package in the given service project:
 ```
 cd services\<service>
-uv sync --reinstall-package cgt-ai-core
+uv sync --reinstall-package ai-core
 ```
 Alternatively, you can run `services\uv-sync-services.ps1`, which does this for all services.
 

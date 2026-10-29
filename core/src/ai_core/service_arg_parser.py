@@ -1,7 +1,7 @@
 import argparse
 import logging
 
-from cgt_ai_core.rmq_default_config import DefaultHost, DefaultPort, DefaultUsername, DefaultPassword
+from ai_core.rmq_default_config import DefaultHost, DefaultPort, DefaultUsername, DefaultPassword
 
 
 def get_service_arg_parser(description: str):

@@ -1,10 +1,10 @@
 [project]
-name = "cgt-ai-speech-synthesis-service"
+name = "ai-speech-synthesis-service"
 version = "0.1.0"
 description = "Consumes text from messages, synthesizes speech for that text, and publishes messages containing that speech to a message queue"
 requires-python = ">=3.13"
 dependencies = [
-    "cgt-ai-core",
+    "ai-core",
     "en-core-web-sm",
     "kokoro>=0.9.4",
     "numpy>=2.3.5",
@@ -17,7 +17,7 @@ override-dependencies = [
 ]
 
 [tool.uv.sources]
-cgt-ai-core = { path = "../../core" }
+ai-core = { path = "../../core" }
 torch = [
     { index = "pytorch-cu129"},
 ]

@@ -8,5 +8,5 @@ $ServiceDirs = Get-ChildItem -Path $PSScriptRoot -Directory
 foreach ($ServiceDir in $ServiceDirs)
 {
     Write-Host "Syncing packages for $($ServiceDir.Name)" -ForegroundColor Cyan
-    uv sync --directory $ServiceDir.FullName --reinstall-package cgt-ai-core
+    uv sync --directory $ServiceDir.FullName --reinstall-package ai-core
 }

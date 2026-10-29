@@ -6,8 +6,8 @@ from pika.frame import Method
 from pika.spec import BasicProperties
 from typing import Callable, Generic, TypeVar
 
-from cgt_ai_core.messages import enc_hook
-from cgt_ai_core.rmq_base import RmqBase
+from ai_core.messages import enc_hook
+from ai_core.rmq_base import RmqBase
 
 LOGGER = logging.getLogger(__name__)
 

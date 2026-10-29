@@ -10,7 +10,7 @@ class ActorCommandsRepo {
 
   ActorCommandsRepo() {
     final base = Platform.environment['LOCALAPPDATA']!;
-    final folder = p.join(base, 'cgt_ace');
+    final folder = p.join(base, 'ace');
     Directory(folder).createSync(recursive: true);
     fileLocation = p.join(folder, fileName);
   }
