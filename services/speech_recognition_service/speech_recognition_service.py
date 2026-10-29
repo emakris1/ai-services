@@ -56,7 +56,7 @@ class SpeechRecognitionService(RmqService):
         self.add_producer(
             exchange_name='speech_recognition',
             exchange_type=ExchangeType.direct,
-            routing_key='actor_commands_service',
+            routing_key='llm_response_service',
             on_producer_ready_callback=self.on_speech_recognition_producer_ready
         )
 

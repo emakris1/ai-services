@@ -1,15 +1,13 @@
 import asyncio
 import kokoro
 import logging
-import numpy as np
 
 from pika.exchange_type import ExchangeType
 
 import ai_common.enums.tts as tts
-import ai_common.enums.notifications as notifications
 
 from ai_common.log_config import LOG_FORMAT
-from ai_common.messages import AudioMessage, CommandConfigMessage, NotificationMessage, TTSRequestMessage
+from ai_common.messages import AudioMessage, TTSRequestMessage
 from ai_common.service_arg_parser import get_service_arg_parser
 from ai_rmq.consumer import RmqConsumer
 from ai_rmq.producer import RmqProducer
@@ -33,17 +31,6 @@ class SpeechSynthesisService(RmqService):
         self.channels: int = 1 # Kokoro only returns mono audio
         self.sample_rate: int = 24000 # Kokoro only returns 24kHz audio
 
-        self.speech_cache: dict[tuple[tts.Language, tts.Voice, str], list[np.ndarray]] = {}
-
-        self.command_config_consumer: RmqConsumer | None = None
-        self.add_consumer(
-            message_type=CommandConfigMessage,
-            exchange_name='actor_commands',
-            exchange_type=ExchangeType.fanout,
-            on_consumer_ready_callback=self.on_command_config_consumer_ready,
-            on_message_callback=self.on_receive_command_config_message
-        )
-
         self.tts_request_consumer: RmqConsumer | None = None
         self.add_consumer(
             message_type=TTSRequestMessage,
@@ -60,13 +47,6 @@ class SpeechSynthesisService(RmqService):
             on_producer_ready_callback=self.on_audio_playback_producer_ready
         )
 
-        self.notification_producer: RmqProducer | None = None
-        self.add_producer(
-            exchange_name='gui_notifications',
-            exchange_type=ExchangeType.fanout,
-            on_producer_ready_callback=self.on_notifications_producer_ready
-        )
-
         self.model: kokoro.KModel = kokoro.KModel()
         self.pipelines: dict[tts.Language, kokoro.KPipeline] = {}
         for language in tts.Language:
@@ -75,36 +55,6 @@ class SpeechSynthesisService(RmqService):
                 model=self.model,
                 device='cuda'
             )
-
-    def on_command_config_consumer_ready(self, consumer: RmqConsumer):
-        self.command_config_consumer = consumer
-
-    def on_receive_command_config_message(self, _unused_consumer: RmqConsumer, message: CommandConfigMessage):
-        LOGGER.info('Command config message received. Clearing and rebuilding speech cache.')
-        self.speech_cache = {}
-        for actor_command in message.commands:
-            for command in actor_command.commands:
-                # TODO: add support for other languages
-                language = tts.Language.AMERICAN_ENGLISH
-                voice = tts.get_voice(actor_command.voice)
-                text = command.reply.lower()
-                key = (language, voice, text)
-                if key not in self.speech_cache:
-                    LOGGER.info('Caching speech for %s.', key)
-                    speech_chunks = []
-                    generator = self.pipelines[language](text=text, voice=voice.value)
-                    for index, (graphemes, phonemes, speech_tensor) in enumerate(generator):
-                        speech_chunks.append(speech_tensor.detach().cpu().numpy())
-                    self.speech_cache[key] = speech_chunks
-
-        self.notification_producer.publish_message(
-            NotificationMessage(
-                icon=notifications.Icon.CHECK_MARK,
-                title='Speech Synthesis Complete',
-                message=f'Synthesized {len(self.speech_cache.keys())} phrases.',
-                color=notifications.Color.GREEN
-            )
-        )
 
     def on_tts_request_consumer_ready(self, consumer: RmqConsumer):
         self.tts_request_consumer = consumer
@@ -135,41 +85,18 @@ class SpeechSynthesisService(RmqService):
                 )
                 continue
 
-            key = (tts_req_msg.language, tts_req_msg.voice, tts_req_msg.text.lower())
-            if key in self.speech_cache and tts_req_msg.play_immediately:
-                LOGGER.info('Cache entry found for %s. Reusing cached speech.', key)
-                speech_chunks = self.speech_cache[key]
-                for speech_chunk in speech_chunks:
-                    audio_msg = AudioMessage(
-                        sample_rate=self.sample_rate,
-                        samples=speech_chunk
-                    )
-                    LOGGER.info('Publishing audio playback message.')
-                    self.audio_playback_producer.publish_message(audio_msg)
-            else:
-                LOGGER.info('Cache entry not found for %s. Generating speech.', key)
-                speech_chunks = []
-                generator = self.pipelines[tts_req_msg.language](text=tts_req_msg.text, voice=tts_req_msg.voice.value)
-                for index, (graphemes, phonemes, speech_tensor) in enumerate(generator):
-                    speech_chunk = speech_tensor.detach().cpu().numpy()
-                    if tts_req_msg.play_immediately:
-                        audio_msg = AudioMessage(
-                            sample_rate=self.sample_rate,
-                            samples=speech_chunk
-                        )
-                        LOGGER.info('Publishing audio playback message.')
-                        self.audio_playback_producer.publish_message(audio_msg)
-                    speech_chunks.append(speech_chunk)
-                if tts_req_msg.cache_speech:
-                    self.speech_cache[key] = speech_chunks
-
+            generator = self.pipelines[tts_req_msg.language](text=tts_req_msg.text, voice=tts_req_msg.voice.value)
+            for graphemes, phonemes, speech_tensor in generator:
+                audio_msg = AudioMessage(
+                    sample_rate=self.sample_rate,
+                    samples=speech_tensor.detach().cpu().numpy()
+                )
+                LOGGER.info('Publishing audio playback message.')
+                self.audio_playback_producer.publish_message(audio_msg)
 
     async def tts_request_generator(self):
         while True:
             yield await self.tts_request_queue.get()
-
-    def on_notifications_producer_ready(self, producer: RmqProducer):
-        self.notification_producer = producer
 
 
 async def main():

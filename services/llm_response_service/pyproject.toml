@@ -1,0 +1,32 @@
+[project]
+name = "ai-llm-response-service"
+version = "0.1.0"
+description = "Consumes recognized speech, generates a conversational reply with a local LLM, and publishes that reply as text-to-speech requests."
+requires-python = ">=3.13"
+dependencies = [
+    "ai-common",
+    "ai-rmq",
+    "torch>=2.9.0",
+    "transformers>=5.22.0",
+]
+
+[tool.uv]
+override-dependencies = [
+    "torch==2.9.0+cu129",
+    "torchvision==0.24.0+cu129",
+]
+
+[tool.uv.sources]
+ai-common = { path = "../../common" }
+ai-rmq = { path = "../../rmq" }
+torch = [
+    { index = "pytorch-cu129"},
+]
+torchvision = [
+    { index = "pytorch-cu129"},
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu129"
+url = "https://download.pytorch.org/whl/cu129"
+explicit = true

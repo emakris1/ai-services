@@ -11,4 +11,3 @@ if ($Shell)
 }
 
 & $PSScriptRoot\services\uv-run-services.ps1 @RunParams
-& $PSScriptRoot\ui\run-ui.ps1

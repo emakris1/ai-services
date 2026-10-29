@@ -3,10 +3,10 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/AI-Services.iml" filepath="$PROJECT_DIR$/.idea/AI-Services.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/ai-actor-commands-service.iml" filepath="$PROJECT_DIR$/.idea/ai-actor-commands-service.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/ai-audio-capture-service.iml" filepath="$PROJECT_DIR$/.idea/ai-audio-capture-service.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/ai-audio-playback-service.iml" filepath="$PROJECT_DIR$/.idea/ai-audio-playback-service.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/ai-common.iml" filepath="$PROJECT_DIR$/.idea/ai-common.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/ai-llm-response-service.iml" filepath="$PROJECT_DIR$/.idea/ai-llm-response-service.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/ai-rmq.iml" filepath="$PROJECT_DIR$/.idea/ai-rmq.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/ai-speech-recognition-service.iml" filepath="$PROJECT_DIR$/.idea/ai-speech-recognition-service.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/ai-speech-synthesis-service.iml" filepath="$PROJECT_DIR$/.idea/ai-speech-synthesis-service.iml" />
